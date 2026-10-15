@@ -1,0 +1,45 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+# Cancel an older run on the same branch when a newer commit is pushed
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      # Static web rendering runs our Firebase setup, which throws if the config is empty.
+      # Placeholder values are enough to check that the app bundles; nothing connects to Firebase.
+      - name: Build web bundle
+        run: npx expo export --platform web
+        env:
+          EXPO_PUBLIC_FIREBASE_API_KEY: ci-placeholder
+          EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN: ci-placeholder
+          EXPO_PUBLIC_FIREBASE_PROJECT_ID: ci-placeholder
+          EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET: ci-placeholder
+          EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID: ci-placeholder
+          EXPO_PUBLIC_FIREBASE_APP_ID: ci-placeholder

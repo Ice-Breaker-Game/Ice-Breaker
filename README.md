@@ -165,6 +165,8 @@ Current rules:
   * as `"member"` with an `inviteCode` whose `inviteCodes/{code}` doc points to this organization (#32).
 
   There's no update rule, so nobody can join twice or change their own role.
+
+  **Admins** of the organization can **read all** its member docs and **delete** any member doc **except their own** (#34).
 * **`{path=**}/members/{memberId}`** (collection group): a user can **read their own** member docs across **all** organizations. This is what lets the Organizations screen find every organization the user belongs to with one `collectionGroup(db, "members")` query (#33).
 * **`organizations/{orgId}/private/{docId}`**: only admins of that organization can **read**, **create** and **update** (#31).
 * **`inviteCodes/{code}`**: any signed-in user can **look up one code** (`get`), but can't list them all. Only admins of the code's organization can **create** or **delete** it. There's no update rule, so an existing code can never be taken over (#31).
@@ -173,7 +175,6 @@ The rules use two helper functions: `isAdmin(orgId)` checks the user's member do
 
 **Still blocked. Add rules as part of these issues:**
 
-* Admins reading the other members of their organization, and deleting member docs (#34)
 * `reports` (#35)
 
 If you change the rules, update this section too, so it matches what's published in the console.

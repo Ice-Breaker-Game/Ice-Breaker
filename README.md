@@ -70,7 +70,7 @@ We use the Firebase JS SDK with these services enabled:
 |---|---|
 | Authentication (Email/Password) | ✅ Enabled |
 | Cloud Firestore | ✅ Enabled |
-| Storage | ❌ Not enabled. It requires the paid Blaze plan. Profile pictures (#29) will use a free image service instead and save the image URL in `photoURL`. |
+| Storage | ❌ Not enabled. It requires the paid Blaze plan. Profile pictures (#29) are shrunk to 256px JPEGs and saved in Firestore instead (see `photoURL` below). |
 
 Firebase is set up once in `src/firebase.js`. Import from there instead of calling `initializeApp` yourself:
 
@@ -92,7 +92,7 @@ One document per user. The document ID is the user's Firebase Auth `uid`.
 |---|---|---|
 | `displayName` | string | Name shown to other users |
 | `email` | string | Login email |
-| `photoURL` | string \| null | Profile picture URL. `null` until the user sets one. |
+| `photoURL` | string \| null | Profile picture as a data URL (`data:image/jpeg;base64,...`), shrunk so its longest side is 256px (about 20–40 KB). Works anywhere an image URL does. `null` until the user sets one. |
 | `blockedUserIds` | array of strings | `uid`s this user has blocked. Starts as `[]`. |
 | `createdAt` | timestamp | When the account was created |
 
@@ -116,7 +116,7 @@ A subcollection inside each organization. The document ID is the member's `uid`.
 |---|---|---|
 | `uid` | string | The member's `uid` (same as the document ID) |
 | `role` | string | `"admin"` or `"member"` |
-| `displayName` | string | Copy of the user's `displayName`. Firestore has no joins, so we store it here to avoid an extra lookup. |
+| `displayName` | string | Copy of the user's `displayName`. Firestore has no joins, so we store it here to avoid an extra lookup. When the user changes their name on the Profile screen, every copy is updated in the same batch (#29). |
 | `inviteCode` | string | Only on members who joined with a code (#32). The code they used. The security rules check it against `inviteCodes/{code}` to prove the code is real. |
 | `joinedAt` | timestamp | When they joined |
 
@@ -164,7 +164,7 @@ Current rules:
   * as `"admin"` in an organization they created. It uses `getAfter()` so it works in the same batch that creates the organization (#30).
   * as `"member"` with an `inviteCode` whose `inviteCodes/{code}` doc points to this organization (#32).
 
-  There's no update rule, so nobody can join twice or change their own role.
+  The only update allowed is a user changing the `displayName` copy on their **own** member docs (#29). Nothing else can be updated, so nobody can join twice or change their own role.
 * **`{path=**}/members/{memberId}`** (collection group): a user can **read their own** member docs across **all** organizations. This is what lets the Organizations screen find every organization the user belongs to with one `collectionGroup(db, "members")` query (#33).
 * **`organizations/{orgId}/private/{docId}`**: only admins of that organization can **read**, **create** and **update** (#31).
 * **`inviteCodes/{code}`**: any signed-in user can **look up one code** (`get`), but can't list them all. Only admins of the code's organization can **create** or **delete** it. There's no update rule, so an existing code can never be taken over (#31).

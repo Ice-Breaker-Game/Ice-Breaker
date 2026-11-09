@@ -1,14 +1,30 @@
-import { Stack } from "expo-router";
+import { Link, Stack } from "expo-router";
 import { signOut } from "firebase/auth";
 import { useState } from "react";
-import { Pressable, StyleSheet, Text } from "react-native";
+import { Pressable, StyleSheet, Text, View } from "react-native";
+import { OrgProvider } from "@/context/OrgContext";
 import { auth } from "@/firebase";
 
 export default function Layout() {
-  return <Stack screenOptions={{ headerRight: () => <LogoutButton /> }} />;
+  return (
+    <OrgProvider>
+      <Stack screenOptions={{ headerRight: () => <HeaderButtons /> }} />
+    </OrgProvider>
+  );
 }
 
 // Shown on the right side of the header on every logged-in screen.
+function HeaderButtons() {
+  return (
+    <View style={styles.headerButtons}>
+      <Link href="/organizations" style={styles.text}>
+        Organizations
+      </Link>
+      <LogoutButton />
+    </View>
+  );
+}
+
 // Moves to the Profile screen once #29 is built.
 function LogoutButton() {
   const [loggingOut, setLoggingOut] = useState(false);
@@ -29,7 +45,6 @@ function LogoutButton() {
       disabled={loggingOut}
       accessibilityRole="button"
       hitSlop={8}
-      style={styles.button}
     >
       <Text style={styles.text}>{loggingOut ? "Logging out..." : "Log out"}</Text>
     </Pressable>
@@ -37,7 +52,10 @@ function LogoutButton() {
 }
 
 const styles = StyleSheet.create({
-  button: {
+  headerButtons: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 16,
     paddingHorizontal: 12,
   },
   text: {

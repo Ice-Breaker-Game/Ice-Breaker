@@ -165,6 +165,7 @@ Current rules:
   * as `"member"` with an `inviteCode` whose `inviteCodes/{code}` doc points to this organization (#32).
 
   There's no update rule, so nobody can join twice or change their own role.
+* **`{path=**}/members/{memberId}`** (collection group): a user can **read their own** member docs across **all** organizations. This is what lets the Organizations screen find every organization the user belongs to with one `collectionGroup(db, "members")` query (#33).
 * **`organizations/{orgId}/private/{docId}`**: only admins of that organization can **read**, **create** and **update** (#31).
 * **`inviteCodes/{code}`**: any signed-in user can **look up one code** (`get`), but can't list them all. Only admins of the code's organization can **create** or **delete** it. There's no update rule, so an existing code can never be taken over (#31).
 
@@ -172,7 +173,26 @@ The rules use two helper functions: `isAdmin(orgId)` checks the user's member do
 
 **Still blocked. Add rules as part of these issues:**
 
-* Reading other members and deleting `organizations/{orgId}/members` (#33, #34)
+* Admins reading the other members of their organization, and deleting member docs (#34)
 * `reports` (#35)
 
 If you change the rules, update this section too, so it matches what's published in the console.
+
+### Indexes
+
+* **`members` collection group, field `uid`**: needed for the `collectionGroup(db, "members")` query on the Organizations screen (#33). Firestore → **Indexes → Single field → Add exemption**, collection ID `members`, field `uid`, with **Collection group** scope enabled for Ascending.
+
+## Active Organization (`useOrg`)
+
+Most features (matches, games, reports) happen inside one organization. The user picks it on the **Organizations** screen (`/organizations`), and any screen can read it:
+
+```tsx
+import { useOrg } from "@/context/OrgContext";
+
+const { activeOrgId, setActiveOrgId, loading } = useOrg();
+```
+
+* `activeOrgId` is `null` until the user picks one. Show a prompt to pick or join an organization in that case.
+* `loading` is `true` for a moment while the saved choice is read from storage.
+* The choice is saved with AsyncStorage per user (`activeOrgId-{uid}`), so it stays after restarting the app, and switching accounts on the same device doesn't mix them up.
+* `OrgProvider` wraps every logged-in screen in `src/app/(logged-in)/_layout.tsx`, so `useOrg()` only works in logged-in screens.

@@ -4,11 +4,13 @@ import { collection, doc, getDoc, serverTimestamp, writeBatch } from "firebase/f
 import { useState } from "react";
 import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import { useAuth } from "@/context/AuthContext";
+import { useOrg } from "@/context/OrgContext";
 import { db } from "@/firebase";
 import { generateUniqueInviteCode } from "@/utils/inviteCode";
 
 export default function CreateOrganization() {
     const { user } = useAuth();
+    const { setActiveOrgId } = useOrg();
     const [name, setName] = useState("");
     const [error, setError] = useState("");
     const [submitting, setSubmitting] = useState(false);
@@ -57,6 +59,7 @@ export default function CreateOrganization() {
             batch.set(privateInviteRef, { code: inviteCode });
             batch.set(inviteCodeRef, { orgId: orgRef.id, createdAt: serverTimestamp() });
             await batch.commit();
+            await setActiveOrgId(orgRef.id);
 
 
             router.replace({ pathname: "/organization/[orgId]", params: { orgId: orgRef.id } });

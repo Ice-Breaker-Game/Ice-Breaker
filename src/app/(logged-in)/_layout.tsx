@@ -1,7 +1,7 @@
-import { Link, Stack } from "expo-router";
-import { StyleSheet, View } from "react-native";
 import { OrgProvider } from "@/context/OrgContext";
 import { colors, fontSize, spacing } from "@/theme";
+import { Link, Stack } from "expo-router";
+import { StyleSheet, View } from "react-native";
 
 export default function Layout() {
   return (
@@ -29,6 +29,9 @@ function HeaderLinks() {
       </Link>
       <Link href="/profile" style={styles.text}>
         Profile
+      </Link>
+      <Link href="/map" style={styles.text}>
+        Map
       </Link>
     </View>
   );

@@ -5,7 +5,7 @@ import { useState } from "react";
 import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import { useAuth } from "@/context/AuthContext";
 import { db } from "@/firebase";
-import { generateInviteCode } from "@/utils/inviteCode";
+import { generateUniqueInviteCode } from "@/utils/inviteCode";
 
 export default function CreateOrganization() {
     const { user } = useAuth();
@@ -32,16 +32,20 @@ export default function CreateOrganization() {
             const userSnapshot = await getDoc(doc(db, "users", user.uid));
             const displayName = userSnapshot.data()?.displayName ?? "";
 
-            // Gets a new auto-generated ID before anything is saved, so the member doc can use it.
+            // Pick a code that no other organization is using.
+            const inviteCode = await generateUniqueInviteCode();
+
+            // Gets a new auto-generated ID before anything is saved, so the other docs can use it.
             const orgRef = doc(collection(db, "organizations"));
             const memberRef = doc(db, "organizations", orgRef.id, "members", user.uid);
+            const privateInviteRef = doc(db, "organizations", orgRef.id, "private", "invite");
+            const inviteCodeRef = doc(db, "inviteCodes", inviteCode);
 
-            // Both writes are saved together, or neither is.
+            // All four writes are saved together, or none are.
             const batch = writeBatch(db);
             batch.set(orgRef, {
                 name: trimmedName,
                 createdBy: user.uid,
-                inviteCode: generateInviteCode(),
                 createdAt: serverTimestamp(),
             });
             batch.set(memberRef, {
@@ -50,7 +54,10 @@ export default function CreateOrganization() {
                 displayName,
                 joinedAt: serverTimestamp(),
             });
+            batch.set(privateInviteRef, { code: inviteCode });
+            batch.set(inviteCodeRef, { orgId: orgRef.id, createdAt: serverTimestamp() });
             await batch.commit();
+
 
             router.replace({ pathname: "/organization/[orgId]", params: { orgId: orgRef.id } });
         } catch (err) {

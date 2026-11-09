@@ -104,8 +104,9 @@ The document ID is generated automatically by Firestore.
 |---|---|---|
 | `name` | string | Organization name |
 | `createdBy` | string | `uid` of the user who created it |
-| `inviteCode` | string | Code other users enter to join (see #31) |
 | `createdAt` | timestamp | When it was created |
+
+The invite code is **not** stored here, because any signed-in user can read organization docs. It lives in `private/invite` (admins only) and `inviteCodes/{code}` (lookup for joining).
 
 ### `organizations/{orgId}/members/{uid}`
 
@@ -117,6 +118,25 @@ A subcollection inside each organization. The document ID is the member's `uid`.
 | `role` | string | `"admin"` or `"member"` |
 | `displayName` | string | Copy of the user's `displayName`. Firestore has no joins, so we store it here to avoid an extra lookup. |
 | `joinedAt` | timestamp | When they joined |
+
+### `organizations/{orgId}/private/invite`
+
+A single document that only the organization's admins can read. It holds the current invite code so the admin can see and share it.
+
+| Field | Type | Description |
+|---|---|---|
+| `code` | string | The organization's current invite code |
+
+### `inviteCodes/{code}`
+
+One document per active invite code. The document ID **is** the code (6 characters, uppercase letters and numbers, without O, 0, I or 1). Joining (#32) looks up a code here to find its organization. Because the code is the document ID, two organizations can never have the same code.
+
+| Field | Type | Description |
+|---|---|---|
+| `orgId` | string | The organization this code joins |
+| `createdAt` | timestamp | When the code was created |
+
+When an admin regenerates the code, the old `inviteCodes/{code}` doc is deleted, so the old code stops working.
 
 ### `reports/{reportId}`
 
@@ -139,11 +159,14 @@ Current rules:
 
 * **`users/{uid}`**: a signed-in user can read and write **only their own** document.
 * **`organizations/{orgId}`**: any signed-in user can **read**. A signed-in user can **create** one with themselves as `createdBy` and a name that isn't empty (50 characters max).
-* **`organizations/{orgId}/members/{uid}`**: a user can **create** only their own member doc, with role `"admin"`, in an organization they created. It uses `getAfter()` so it works in the same batch that creates the organization (#30).
+* **`organizations/{orgId}/members/{uid}`**: a user can **read only their own** member doc (to check their role). A user can **create** only their own member doc, with role `"admin"`, in an organization they created. It uses `getAfter()` so it works in the same batch that creates the organization (#30).
+* **`organizations/{orgId}/private/{docId}`**: only admins of that organization can **read**, **create** and **update** (#31).
+* **`inviteCodes/{code}`**: any signed-in user can **look up one code** (`get`), but can't list them all. Only admins of the code's organization can **create** or **delete** it. There's no update rule, so an existing code can never be taken over (#31).
+
+The rules use two helper functions: `isAdmin(orgId)` checks the user's member doc with `get()`, and `isAdminAfter(orgId)` checks it with `getAfter()` for batches that create the member doc at the same time.
 
 **Still blocked. Add rules as part of these issues:**
 
-* Editing organizations, e.g. regenerating the invite code (#31)
 * Joining as a `"member"`, reading, and deleting `organizations/{orgId}/members` (#32, #33, #34)
 * `reports` (#35)
 

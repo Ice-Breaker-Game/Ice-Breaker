@@ -117,6 +117,7 @@ A subcollection inside each organization. The document ID is the member's `uid`.
 | `uid` | string | The member's `uid` (same as the document ID) |
 | `role` | string | `"admin"` or `"member"` |
 | `displayName` | string | Copy of the user's `displayName`. Firestore has no joins, so we store it here to avoid an extra lookup. |
+| `inviteCode` | string | Only on members who joined with a code (#32). The code they used. The security rules check it against `inviteCodes/{code}` to prove the code is real. |
 | `joinedAt` | timestamp | When they joined |
 
 ### `organizations/{orgId}/private/invite`
@@ -159,7 +160,11 @@ Current rules:
 
 * **`users/{uid}`**: a signed-in user can read and write **only their own** document.
 * **`organizations/{orgId}`**: any signed-in user can **read**. A signed-in user can **create** one with themselves as `createdBy` and a name that isn't empty (50 characters max).
-* **`organizations/{orgId}/members/{uid}`**: a user can **read only their own** member doc (to check their role). A user can **create** only their own member doc, with role `"admin"`, in an organization they created. It uses `getAfter()` so it works in the same batch that creates the organization (#30).
+* **`organizations/{orgId}/members/{uid}`**: a user can **read only their own** member doc (to check their role). A user can **create** only their own member doc, in one of two ways:
+  * as `"admin"` in an organization they created. It uses `getAfter()` so it works in the same batch that creates the organization (#30).
+  * as `"member"` with an `inviteCode` whose `inviteCodes/{code}` doc points to this organization (#32).
+
+  There's no update rule, so nobody can join twice or change their own role.
 * **`organizations/{orgId}/private/{docId}`**: only admins of that organization can **read**, **create** and **update** (#31).
 * **`inviteCodes/{code}`**: any signed-in user can **look up one code** (`get`), but can't list them all. Only admins of the code's organization can **create** or **delete** it. There's no update rule, so an existing code can never be taken over (#31).
 
@@ -167,7 +172,7 @@ The rules use two helper functions: `isAdmin(orgId)` checks the user's member do
 
 **Still blocked. Add rules as part of these issues:**
 
-* Joining as a `"member"`, reading, and deleting `organizations/{orgId}/members` (#32, #33, #34)
+* Reading other members and deleting `organizations/{orgId}/members` (#33, #34)
 * `reports` (#35)
 
 If you change the rules, update this section too, so it matches what's published in the console.

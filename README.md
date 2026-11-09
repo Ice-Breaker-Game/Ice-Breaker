@@ -127,12 +127,13 @@ Rules are managed in the Firebase console (**Firestore Database → Rules**). An
 Current rules:
 
 * **`users/{uid}`**: a signed-in user can read and write **only their own** document.
-* **`organizations/{orgId}`**: any signed-in user can **read**. Nobody can write yet.
+* **`organizations/{orgId}`**: any signed-in user can **read**. A signed-in user can **create** one with themselves as `createdBy` and a name that isn't empty (50 characters max).
+* **`organizations/{orgId}/members/{uid}`**: a user can **create** only their own member doc, with role `"admin"`, in an organization they created. It uses `getAfter()` so it works in the same batch that creates the organization (#30).
 
 **Still blocked. Add rules as part of these issues:**
 
-* Creating/editing organizations (#30, #31)
-* `organizations/{orgId}/members` (#32, #33, #34)
+* Editing organizations, e.g. regenerating the invite code (#31)
+* Joining as a `"member"`, reading, and deleting `organizations/{orgId}/members` (#32, #33, #34)
 * `reports` (#35)
 
 If you change the rules, update this section too, so it matches what's published in the console.

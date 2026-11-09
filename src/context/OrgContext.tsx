@@ -1,4 +1,6 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { doc, getDoc } from "firebase/firestore";
+import { db } from "@/firebase";
 import { createContext, type ReactNode, useContext, useEffect, useState } from "react";
 import { useAuth } from "./AuthContext";
 
@@ -23,7 +25,16 @@ export function OrgProvider({ children }: { children: ReactNode }) {
     useEffect(() => {
         const loadSavedOrg = async () => {
             try {
-                setActiveOrgIdState(await AsyncStorage.getItem(storageKey));
+                const savedOrgId = await AsyncStorage.getItem(storageKey);
+                if (savedOrgId) {
+                    // If the user was removed from this organization, forget it.
+                    const memberSnapshot = await getDoc(doc(db, "organizations", savedOrgId, "members", user.uid));
+                    if (memberSnapshot.exists()) {
+                        setActiveOrgIdState(savedOrgId);
+                    } else {
+                        await AsyncStorage.removeItem(storageKey);
+                    }
+                }
             } catch {
                 // If storage can't be read, start with no active organization.
             } finally {
@@ -32,7 +43,7 @@ export function OrgProvider({ children }: { children: ReactNode }) {
         };
 
         void loadSavedOrg();
-    }, [storageKey]);
+    }, [storageKey, user.uid]);
 
     const setActiveOrgId = async (orgId: string | null) => {
         setActiveOrgIdState(orgId);

@@ -1,4 +1,3 @@
-import { Image } from "expo-image";
 import { ImageManipulator, SaveFormat } from "expo-image-manipulator";
 import * as ImagePicker from "expo-image-picker";
 import { Stack } from "expo-router";
@@ -16,10 +15,11 @@ import {
     writeBatch,
 } from "firebase/firestore";
 import { useEffect, useState } from "react";
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
+import { ActivityIndicator, Pressable, StyleSheet, Text, View } from "react-native";
+import { Avatar, Button, Card, Screen, StatusMessage, TextField } from "@/components";
 import { useAuth } from "@/context/AuthContext";
 import { auth, db } from "@/firebase";
-import { getInitials } from "@/utils/initials";
+import { colors, fontSize, spacing } from "@/theme";
 
 // Profile pictures are saved in Firestore as small JPEG data URLs, because Firebase Storage
 // needs the paid plan. Shrinking the longest side to 256px keeps each one around 20-40 KB.
@@ -220,83 +220,75 @@ export default function ProfileScreen() {
     if (loading) {
         return (
             <View style={styles.centered}>
-                <ActivityIndicator />
+                <ActivityIndicator color={colors.primary} />
             </View>
         );
     }
 
     if (!profile) {
         return (
-            <View style={styles.centered}>
+            <Screen centered>
                 <Stack.Screen options={{ title: "Profile" }} />
-                <Text style={styles.error}>{error}</Text>
-            </View>
+                <StatusMessage type="error" message={error} />
+            </Screen>
         );
     }
 
     return (
-        <ScrollView contentContainerStyle={styles.container}>
+        <Screen>
             <Stack.Screen options={{ title: "Profile" }} />
 
-            <View style={styles.avatarWrapper}>
-                {profile.photoURL ? (
-                    <Image
-                        source={{ uri: profile.photoURL }}
-                        style={styles.avatar}
-                        contentFit="cover"
-                        accessibilityLabel="Your profile picture"
-                    />
-                ) : (
-                    <View style={[styles.avatar, styles.initialsAvatar]}>
-                        <Text style={styles.initials}>{getInitials(profile.displayName)}</Text>
-                    </View>
-                )}
-                {savingPhoto && (
-                    <View style={[styles.avatar, styles.avatarOverlay]}>
-                        <ActivityIndicator color="#fff" />
-                    </View>
-                )}
-            </View>
-
-            <View style={styles.photoButtons}>
-                <Pressable onPress={handleChangePhoto} disabled={savingPhoto} accessibilityRole="button" hitSlop={8}>
-                    <Text style={styles.link}>{profile.photoURL ? "Change picture" : "Add picture"}</Text>
-                </Pressable>
-                {!!profile.photoURL && (
-                    <Pressable onPress={handleRemovePhoto} disabled={savingPhoto} accessibilityRole="button" hitSlop={8}>
-                        <Text style={styles.removeLink}>Remove</Text>
+            <Card style={styles.profileCard}>
+                <View>
+                    <Avatar name={profile.displayName} photoURL={profile.photoURL} size={120} />
+                    {savingPhoto && (
+                        <View style={styles.avatarOverlay}>
+                            <ActivityIndicator color={colors.textOnPrimary} />
+                        </View>
+                    )}
+                </View>
+                <View style={styles.photoButtons}>
+                    <Pressable onPress={handleChangePhoto} disabled={savingPhoto} accessibilityRole="button" hitSlop={8}>
+                        <Text style={styles.link}>{profile.photoURL ? "Change picture" : "Add picture"}</Text>
                     </Pressable>
-                )}
-            </View>
+                    {!!profile.photoURL && (
+                        <Pressable
+                            onPress={handleRemovePhoto}
+                            disabled={savingPhoto}
+                            accessibilityRole="button"
+                            accessibilityLabel="Remove picture"
+                            hitSlop={8}
+                        >
+                            <Text style={styles.removeLink}>Remove</Text>
+                        </Pressable>
+                    )}
+                </View>
+            </Card>
 
-            <View style={styles.section}>
+            <Card>
                 <Text style={styles.label}>Display name</Text>
                 {editingName ? (
                     <>
-                        <TextInput
-                            style={styles.input}
+                        <TextField
                             value={nameInput}
                             onChangeText={setNameInput}
                             placeholder="Enter your display name"
+                            accessibilityLabel="Display name"
                             autoCapitalize="words"
                             maxLength={50}
                             autoFocus
+                            returnKeyType="done"
+                            onSubmitEditing={handleSaveName}
                         />
                         <View style={styles.editButtons}>
-                            <Pressable
+                            <Button
+                                title="Cancel"
+                                variant="outline"
                                 onPress={() => setEditingName(false)}
                                 disabled={savingName}
-                                style={[styles.button, styles.secondaryButton]}
-                            >
-                                <Text style={styles.secondaryButtonText}>Cancel</Text>
-                            </Pressable>
-                            <Pressable onPress={handleSaveName} disabled={savingName} style={styles.button}>
-                                {savingName ? (
-                                    <ActivityIndicator color="#fff" size="small" />
-                                ) : (
-                                    <Text style={styles.buttonText}>Save</Text>
-                                )}
-                            </Pressable>
+                                style={styles.editButton}
+                            />
+                            <Button title="Save" onPress={handleSaveName} loading={savingName} style={styles.editButton} />
                         </View>
                     </>
                 ) : (
@@ -307,14 +299,14 @@ export default function ProfileScreen() {
                         </Pressable>
                     </View>
                 )}
-            </View>
 
-            <View style={styles.section}>
+                <View style={styles.divider} />
+
                 <Text style={styles.label}>Email</Text>
                 <Text style={styles.value}>{profile.email}</Text>
-            </View>
+            </Card>
 
-            <View style={styles.section}>
+            <Card>
                 <Text style={styles.label}>Blocked users</Text>
                 {blockedUsers.length === 0 ? (
                     <Text style={styles.emptyText}>You haven&apos;t blocked anyone.</Text>
@@ -330,7 +322,7 @@ export default function ProfileScreen() {
                                 hitSlop={8}
                             >
                                 {unblockingUid === blockedUser.uid ? (
-                                    <ActivityIndicator color="#007BFF" size="small" />
+                                    <ActivityIndicator color={colors.primary} size="small" />
                                 ) : (
                                     <Text style={styles.link}>Unblock</Text>
                                 )}
@@ -338,20 +330,13 @@ export default function ProfileScreen() {
                         </View>
                     ))
                 )}
-            </View>
+            </Card>
 
-            {!!error && <Text style={styles.error}>{error}</Text>}
-            {!!message && <Text style={styles.message}>{message}</Text>}
+            <StatusMessage type="error" message={error} />
+            <StatusMessage type="success" message={message} />
 
-            <Pressable
-                onPress={handleLogout}
-                disabled={loggingOut}
-                style={styles.logoutButton}
-                accessibilityRole="button"
-            >
-                <Text style={styles.logoutText}>{loggingOut ? "Logging out..." : "Log out"}</Text>
-            </Pressable>
-        </ScrollView>
+            <Button title={loggingOut ? "Logging out..." : "Log out"} variant="danger" onPress={handleLogout} disabled={loggingOut} />
+        </Screen>
     );
 }
 
@@ -360,120 +345,66 @@ const styles = StyleSheet.create({
         flex: 1,
         justifyContent: "center",
         alignItems: "center",
-        padding: 12,
+        backgroundColor: colors.background,
     },
-    container: {
-        padding: 16,
-        gap: 16,
-        width: "100%",
-        maxWidth: 480,
-        alignSelf: "center",
-    },
-    avatarWrapper: {
-        alignSelf: "center",
-    },
-    avatar: {
-        width: 120,
-        height: 120,
-        borderRadius: 60,
-    },
-    initialsAvatar: {
-        backgroundColor: "#007BFF",
-        justifyContent: "center",
+    profileCard: {
         alignItems: "center",
-    },
-    initials: {
-        color: "#fff",
-        fontSize: 40,
-        fontWeight: "bold",
     },
     avatarOverlay: {
         position: "absolute",
-        backgroundColor: "rgba(0, 0, 0, 0.4)",
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        borderRadius: 60,
+        backgroundColor: colors.overlay,
         justifyContent: "center",
         alignItems: "center",
     },
     photoButtons: {
         flexDirection: "row",
         justifyContent: "center",
-        gap: 24,
-    },
-    section: {
-        gap: 6,
+        gap: spacing.xl,
     },
     label: {
-        fontSize: 14,
-        color: "#666666",
+        fontSize: fontSize.sm,
+        fontWeight: "600",
+        color: colors.textMuted,
     },
     valueRow: {
         flexDirection: "row",
         alignItems: "center",
         justifyContent: "space-between",
-        gap: 12,
+        gap: spacing.md,
     },
     value: {
-        fontSize: 17,
-        color: "#111111",
+        fontSize: fontSize.lg,
+        color: colors.text,
         flexShrink: 1,
     },
-    input: {
-        borderWidth: 1,
-        borderColor: "#ccc",
-        borderRadius: 8,
-        padding: 12,
+    divider: {
+        height: 1,
+        backgroundColor: colors.border,
     },
     editButtons: {
         flexDirection: "row",
-        gap: 12,
+        gap: spacing.md,
     },
-    button: {
+    editButton: {
         flex: 1,
-        backgroundColor: "#007BFF",
-        paddingVertical: 12,
-        borderRadius: 8,
-        alignItems: "center",
-    },
-    buttonText: {
-        color: "#fff",
-        fontSize: 15,
-    },
-    secondaryButton: {
-        backgroundColor: "transparent",
-        borderWidth: 1,
-        borderColor: "#007BFF",
-    },
-    secondaryButtonText: {
-        color: "#007BFF",
-        fontSize: 15,
     },
     link: {
-        color: "#007BFF",
-        fontSize: 15,
+        color: colors.primary,
+        fontSize: fontSize.md,
+        fontWeight: "600",
     },
     removeLink: {
-        color: "#FF0000",
-        fontSize: 15,
-    },
-    logoutButton: {
-        marginTop: 16,
-        paddingVertical: 12,
-        borderRadius: 8,
-        borderWidth: 1,
-        borderColor: "#FF0000",
-        alignItems: "center",
-    },
-    logoutText: {
-        color: "#FF0000",
-        fontSize: 15,
+        color: colors.danger,
+        fontSize: fontSize.md,
+        fontWeight: "600",
     },
     emptyText: {
-        fontSize: 15,
-        color: "#666666",
-    },
-    error: {
-        color: "#FF0000",
-    },
-    message: {
-        color: "#333333",
+        fontSize: fontSize.md,
+        color: colors.textMuted,
     },
 });

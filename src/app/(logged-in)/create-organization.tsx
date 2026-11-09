@@ -1,11 +1,13 @@
-import { router } from "expo-router";
+import { router, Stack } from "expo-router";
 import { FirebaseError } from "firebase/app";
 import { collection, doc, getDoc, serverTimestamp, writeBatch } from "firebase/firestore";
 import { useState } from "react";
-import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
+import { StyleSheet, Text } from "react-native";
+import { Button, Card, Screen, StatusMessage, TextField } from "@/components";
 import { useAuth } from "@/context/AuthContext";
 import { useOrg } from "@/context/OrgContext";
 import { db } from "@/firebase";
+import { colors, fontSize } from "@/theme";
 import { generateUniqueInviteCode } from "@/utils/inviteCode";
 
 export default function CreateOrganization() {
@@ -75,62 +77,38 @@ export default function CreateOrganization() {
     };
 
     return (
-        <View style={styles.container}>
-            <Text style={styles.header}>Create Organization</Text>
-            <TextInput
-                style={styles.input}
-                placeholder="Organization name"
-                value={name}
-                onChangeText={setName}
-                autoCapitalize="words"
-                maxLength={50}
-            />
-            {!!error && <Text style={styles.error}>{error}</Text>}
-
-            <Pressable onPress={handleCreate} style={styles.button} disabled={submitting}>
-                {submitting ? (
-                    <ActivityIndicator color="#fff" size="small" />
-                ) : (
-                    <Text style={styles.buttonText}>Create</Text>
-                )}
-            </Pressable>
-        </View>
+        <Screen>
+            <Stack.Screen options={{ title: "Create organization" }} />
+            <Card>
+                <Text style={styles.title} accessibilityRole="header">
+                    Start a new organization
+                </Text>
+                <Text style={styles.subtitle}>You&apos;ll be its admin and get an invite code to share.</Text>
+                <TextField
+                    label="Organization name"
+                    placeholder="e.g. Downtown Library Book Club"
+                    value={name}
+                    onChangeText={setName}
+                    autoCapitalize="words"
+                    maxLength={50}
+                    returnKeyType="done"
+                    onSubmitEditing={handleCreate}
+                />
+                <StatusMessage type="error" message={error} />
+                <Button title="Create" onPress={handleCreate} loading={submitting} />
+            </Card>
+        </Screen>
     );
 }
 
 const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        justifyContent: "center",
-        padding: 12,
+    title: {
+        fontSize: fontSize.xl,
+        fontWeight: "700",
+        color: colors.primaryDark,
     },
-    header: {
-        fontSize: 28,
-        fontWeight: "bold",
-        color: "#111111",
-        marginBottom: 12,
-        textAlign: "center",
-    },
-    input: {
-        borderWidth: 1,
-        borderColor: "#ccc",
-        borderRadius: 8,
-        padding: 12,
-        marginBottom: 12,
-    },
-    button: {
-        backgroundColor: "#007BFF",
-        paddingVertical: 12,
-        paddingHorizontal: 24,
-        borderRadius: 8,
-        alignItems: "center",
-    },
-    buttonText: {
-        color: "#fff",
-        fontSize: 15,
-    },
-    error: {
-        color: "#FF0000",
-        marginBottom: 12,
+    subtitle: {
+        fontSize: fontSize.md,
+        color: colors.textMuted,
     },
 });

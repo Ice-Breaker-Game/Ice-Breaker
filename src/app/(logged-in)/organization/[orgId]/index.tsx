@@ -2,9 +2,11 @@ import * as Clipboard from "expo-clipboard";
 import { Link, Stack, useLocalSearchParams } from "expo-router";
 import { collection, doc, getDoc, getDocs, serverTimestamp, writeBatch } from "firebase/firestore";
 import { useEffect, useState } from "react";
-import { ActivityIndicator, Pressable, ScrollView, Share, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, Pressable, Share, StyleSheet, Text, View } from "react-native";
+import { Avatar, Button, Card, Screen, StatusMessage } from "@/components";
 import { useAuth } from "@/context/AuthContext";
 import { db } from "@/firebase";
+import { colors, fontSize, radius, spacing } from "@/theme";
 import { generateUniqueInviteCode } from "@/utils/inviteCode";
 
 type MemberSummary = {
@@ -111,30 +113,33 @@ export default function OrganizationPage() {
 
     if (loading) {
         return (
-            <View style={styles.container}>
-                <ActivityIndicator />
+            <View style={styles.centered}>
+                <ActivityIndicator color={colors.primary} />
             </View>
         );
     }
 
     if (error) {
         return (
-            <View style={styles.container}>
-                <Text style={styles.error}>{error}</Text>
-            </View>
+            <Screen centered>
+                <StatusMessage type="error" message={error} />
+            </Screen>
         );
     }
 
     return (
-        <ScrollView contentContainerStyle={styles.scrollContainer}>
+        <Screen>
             <Stack.Screen options={{ title: name }} />
-            <Text style={styles.header}>{name}</Text>
+            <Text style={styles.header} accessibilityRole="header">
+                {name}
+            </Text>
 
             {isAdmin && (
-                <View style={styles.inviteSection}>
-                    <Text style={styles.label}>Invite code</Text>
+                <Card>
+                    <Text style={styles.sectionTitle}>Invite people</Text>
                     <Pressable
                         onPress={handleCopy}
+                        style={styles.codeBox}
                         accessibilityRole="button"
                         accessibilityLabel={`Copy invite code ${inviteCode}`}
                     >
@@ -142,35 +147,23 @@ export default function OrganizationPage() {
                         <Text style={styles.hint}>Tap to copy</Text>
                     </Pressable>
 
-
-                    <Pressable onPress={handleShare} style={styles.button}>
-                        <Text style={styles.buttonText}>Share</Text>
-                    </Pressable>
-
-                    <Pressable
+                    <Button title="Share" onPress={handleShare} />
+                    <Button
+                        title="Regenerate code"
+                        variant="outline"
                         onPress={handleRegenerate}
-                        style={[styles.button, styles.secondaryButton]}
-                        disabled={regenerating}
-                    >
-                        {regenerating ? (
-                            <ActivityIndicator color="#007BFF" size="small" />
-                        ) : (
-                            <Text style={styles.secondaryButtonText}>Regenerate code</Text>
-                        )}
-                    </Pressable>
-
+                        loading={regenerating}
+                    />
                     <Link href={{ pathname: "/organization/[orgId]/members", params: { orgId } }} asChild>
-                        <Pressable style={StyleSheet.flatten([styles.button, styles.secondaryButton])}>
-                            <Text style={styles.secondaryButtonText}>Manage members</Text>
-                        </Pressable>
+                        <Button title="Manage members" variant="outline" />
                     </Link>
 
-                    {!!message && <Text style={styles.message}>{message}</Text>}
-                </View>
+                    <StatusMessage type="info" message={message} />
+                </Card>
             )}
 
             {isMember && (
-                <View style={styles.membersSection}>
+                <Card>
                     <Text style={styles.sectionTitle}>Members ({members.length})</Text>
                     {members.map((member) => (
                         <Link
@@ -182,6 +175,7 @@ export default function OrganizationPage() {
                             asChild
                         >
                             <Pressable style={styles.memberRow} accessibilityRole="link">
+                                <Avatar name={member.displayName} size={36} />
                                 <Text style={styles.memberName}>
                                     {member.displayName}
                                     {member.uid === user.uid ? " (you)" : ""}
@@ -190,107 +184,63 @@ export default function OrganizationPage() {
                             </Pressable>
                         </Link>
                     ))}
-                </View>
+                </Card>
             )}
-        </ScrollView>
+        </Screen>
     );
 }
 
 const styles = StyleSheet.create({
-    container: {
+    centered: {
         flex: 1,
         justifyContent: "center",
         alignItems: "center",
-        padding: 12,
-    },
-    scrollContainer: {
-        alignItems: "center",
-        padding: 16,
-        gap: 24,
-    },
-    membersSection: {
-        width: "100%",
-        maxWidth: 320,
-        gap: 8,
-    },
-    sectionTitle: {
-        fontSize: 18,
-        fontWeight: "bold",
-        color: "#111111",
-    },
-    memberRow: {
-        flexDirection: "row",
-        justifyContent: "space-between",
-        alignItems: "center",
-        paddingVertical: 12,
-        paddingHorizontal: 12,
-        borderWidth: 1,
-        borderColor: "#ccc",
-        borderRadius: 8,
-    },
-    memberName: {
-        fontSize: 16,
-        color: "#111111",
-        flexShrink: 1,
-    },
-    memberRole: {
-        fontSize: 13,
-        color: "#666666",
+        backgroundColor: colors.background,
     },
     header: {
-        fontSize: 28,
-        fontWeight: "bold",
-        color: "#111111",
+        fontSize: fontSize.title,
+        fontWeight: "700",
+        color: colors.primaryDark,
         textAlign: "center",
+        marginVertical: spacing.sm,
     },
-    inviteSection: {
-        width: "100%",
-        maxWidth: 320,
-        gap: 12,
+    sectionTitle: {
+        fontSize: fontSize.lg,
+        fontWeight: "700",
+        color: colors.text,
     },
-    label: {
-        fontSize: 14,
-        color: "#666666",
-        textAlign: "center",
+    codeBox: {
+        alignItems: "center",
+        paddingVertical: spacing.lg,
+        borderRadius: radius.md,
+        borderWidth: 1.5,
+        borderStyle: "dashed",
+        borderColor: colors.primary,
+        backgroundColor: colors.primaryLight,
     },
     code: {
         fontSize: 32,
-        fontWeight: "bold",
-        letterSpacing: 4,
-        textAlign: "center",
+        fontWeight: "700",
+        letterSpacing: 6,
+        color: colors.primaryDark,
     },
-
     hint: {
-        fontSize: 12,
-        color: "#666666",
-        textAlign: "center",
+        fontSize: fontSize.sm,
+        color: colors.textMuted,
     },
-
-    button: {
-        backgroundColor: "#007BFF",
-        paddingVertical: 12,
-        paddingHorizontal: 24,
-        borderRadius: 8,
+    memberRow: {
+        flexDirection: "row",
         alignItems: "center",
+        gap: spacing.md,
+        paddingVertical: spacing.sm,
     },
-    buttonText: {
-        color: "#fff",
-        fontSize: 15,
+    memberName: {
+        flex: 1,
+        fontSize: fontSize.md,
+        color: colors.text,
     },
-    secondaryButton: {
-        backgroundColor: "transparent",
-        borderWidth: 1,
-        borderColor: "#007BFF",
-    },
-    secondaryButtonText: {
-        color: "#007BFF",
-        fontSize: 15,
-    },
-    message: {
-        color: "#333333",
-        textAlign: "center",
-    },
-    error: {
-        color: "#FF0000",
+    memberRole: {
+        fontSize: fontSize.sm,
+        color: colors.textMuted,
     },
 });

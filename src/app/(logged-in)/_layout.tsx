@@ -1,11 +1,20 @@
 import { Link, Stack } from "expo-router";
 import { StyleSheet, View } from "react-native";
 import { OrgProvider } from "@/context/OrgContext";
+import { colors, fontSize, spacing } from "@/theme";
 
 export default function Layout() {
   return (
     <OrgProvider>
-      <Stack screenOptions={{ headerRight: () => <HeaderLinks /> }} />
+      <Stack
+        screenOptions={{
+          headerStyle: { backgroundColor: colors.primaryDark },
+          headerTintColor: colors.textOnPrimary,
+          headerTitleStyle: { fontWeight: "700" },
+          contentStyle: { backgroundColor: colors.background },
+          headerRight: () => <HeaderLinks />,
+        }}
+      />
     </OrgProvider>
   );
 }
@@ -29,11 +38,12 @@ const styles = StyleSheet.create({
   headerLinks: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 16,
-    paddingHorizontal: 12,
+    gap: spacing.lg,
+    paddingHorizontal: spacing.md,
   },
   text: {
-    color: "#007BFF",
-    fontSize: 15,
+    color: colors.textOnPrimary,
+    fontSize: fontSize.md,
+    fontWeight: "600",
   },
 });

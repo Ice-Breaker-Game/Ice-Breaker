@@ -1,4 +1,6 @@
-import { StyleSheet, Text, View, Pressable, TextInput, ActivityIndicator } from "react-native";
+import { StyleSheet, Text } from "react-native";
+import { AuthHeader, Button, Card, Screen, StatusMessage, TextField } from "@/components";
+import { colors, fontSize, spacing } from "@/theme";
 import { useState } from "react";
 import { createUserWithEmailAndPassword } from "firebase/auth";
 import { auth, db } from "../../firebase";
@@ -69,114 +71,67 @@ export default function Signup() {
     };
 
     return (
-        <View style={styles.container}>
-            <Text style={styles.header}>
-                Create Account
-            </Text>
-            <TextInput
-                style={styles.input}
-                placeholder="Enter your display name"
-                value={displayName}
-                onChangeText={setDisplayName}
-                autoCapitalize="words"
-            />
-            <TextInput
-                style={styles.input}
-                placeholder="Enter your email"
-                value={email}
-                onChangeText={setEmail}
-                keyboardType="email-address"
-                autoCapitalize="none"
-                autoComplete="email"
-            />
-            <TextInput
-                style={styles.input}
-                placeholder="Enter your password"
-                secureTextEntry={true}
-                value={password}
-                onChangeText={setPassword}
-                autoCapitalize="none"
-                autoComplete="new-password"
-            />
-            <TextInput
-                style={styles.input}
-                placeholder="Confirm your password"
-                secureTextEntry={true}
-                value={confirmPassword}
-                onChangeText={setConfirmPassword}
-                autoCapitalize="none"
-                autoComplete="new-password"
-            />
-            {!!error && <Text style={styles.error}>{error}</Text>}
-
-            <Pressable onPress={handleSignUp}
-                style={styles.button}
-                disabled={submitting}
-            >
-                {submitting ? (
-                    <ActivityIndicator color='#fff' size="small" />
-                ) : (
-                    <Text style={styles.buttonText}>Sign up</Text>
-                )}
-            </Pressable>
-            <Text style={styles.haveAccount}>
+        <Screen centered safeArea>
+            <AuthHeader title="Create account" subtitle="Join your group and start breaking the ice." />
+            <Card>
+                <TextField
+                    label="Display name"
+                    placeholder="What should people call you?"
+                    value={displayName}
+                    onChangeText={setDisplayName}
+                    autoCapitalize="words"
+                />
+                <TextField
+                    label="Email"
+                    placeholder="you@example.com"
+                    value={email}
+                    onChangeText={setEmail}
+                    keyboardType="email-address"
+                    autoCapitalize="none"
+                    autoComplete="email"
+                />
+                <TextField
+                    label="Password"
+                    placeholder="At least 6 characters"
+                    secureTextEntry={true}
+                    value={password}
+                    onChangeText={setPassword}
+                    autoCapitalize="none"
+                    autoComplete="new-password"
+                />
+                <TextField
+                    label="Confirm password"
+                    placeholder="Type it again"
+                    secureTextEntry={true}
+                    value={confirmPassword}
+                    onChangeText={setConfirmPassword}
+                    autoCapitalize="none"
+                    autoComplete="new-password"
+                    returnKeyType="go"
+                    onSubmitEditing={handleSignUp}
+                />
+                <StatusMessage type="error" message={error} />
+                <Button title="Sign up" onPress={handleSignUp} loading={submitting} />
+            </Card>
+            <Text style={styles.footer}>
                 Already have an account?{" "}
-                <Link href="/login" style={styles.login}>
+                <Link href="/login" style={styles.link}>
                     Log in
                 </Link>
             </Text>
-        </View>
+        </Screen>
     );
 }
 
 const styles = StyleSheet.create({
-
-    header: {
-        fontSize: 28,
-        fontWeight: 'bold',
-        color: '#111111',
-        marginBottom: 12,
-        textAlign: "center"
-    },
-
-    container: {
-        flex: 1,
-        justifyContent: "center",
-        padding: 12,
-    },
-
-    input: {
-        borderWidth: 1,
-        borderColor: "#ccc",
-        borderRadius: 8,
-        padding: 12,
-        marginBottom: 12,
-    },
-
-    button: {
-        backgroundColor: '#007BFF',
-        paddingVertical: 12,
-        paddingHorizontal: 24,
-        borderRadius: 8,
-        alignItems: 'center',
-    },
-
-    buttonText: {
-        color: "#fff",
-        fontSize: 15,
-    },
-
-    error: {
-        color: "#FF0000",
-    },
-
-    haveAccount: {
+    footer: {
         textAlign: "center",
-        marginTop: 20,
+        color: colors.textMuted,
+        fontSize: fontSize.md,
+        marginTop: spacing.sm,
     },
-
-    login: {
-        color: "#0000EE",
-        fontWeight: "bold"
+    link: {
+        color: colors.primary,
+        fontWeight: "700",
     },
 });

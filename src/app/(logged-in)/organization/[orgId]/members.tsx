@@ -13,8 +13,10 @@ import {
 } from "firebase/firestore";
 import { useEffect, useState } from "react";
 import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View } from "react-native";
+import { Avatar, Button, Card, Screen, StatusMessage } from "@/components";
 import { useAuth } from "@/context/AuthContext";
 import { db } from "@/firebase";
+import { colors, fontSize, radius, shadow, spacing } from "@/theme";
 import { confirmAction } from "@/utils/confirm";
 
 type Member = {
@@ -152,48 +154,48 @@ export default function ManageMembers() {
     if (loading) {
         return (
             <View style={styles.centered}>
-                <ActivityIndicator />
+                <ActivityIndicator color={colors.primary} />
             </View>
         );
     }
 
     if (!isAdmin) {
         return (
-            <View style={styles.centered}>
+            <Screen centered>
                 <Stack.Screen options={{ title: "Members" }} />
-                <Text style={styles.error}>{error || "Only admins can manage members."}</Text>
-            </View>
+                <StatusMessage type="error" message={error || "Only admins can manage members."} />
+            </Screen>
         );
     }
 
     return (
-        <View style={styles.container}>
+        <Screen scroll={false}>
             <Stack.Screen options={{ title: "Manage members" }} />
 
             <View style={styles.tabs} accessibilityRole="tablist">
                 <Pressable
                     onPress={() => setTab("members")}
-                    style={tab === "members" ? styles.tabActive : styles.tab}
+                    style={[styles.tab, tab === "members" && styles.tabActive]}
                     accessibilityRole="tab"
                     accessibilityState={{ selected: tab === "members" }}
                 >
-                    <Text style={tab === "members" ? styles.tabTextActive : styles.tabText}>
+                    <Text style={[styles.tabText, tab === "members" && styles.tabTextActive]}>
                         Members ({members.length})
                     </Text>
                 </Pressable>
                 <Pressable
                     onPress={() => setTab("reports")}
-                    style={tab === "reports" ? styles.tabActive : styles.tab}
+                    style={[styles.tab, tab === "reports" && styles.tabActive]}
                     accessibilityRole="tab"
                     accessibilityState={{ selected: tab === "reports" }}
                 >
-                    <Text style={tab === "reports" ? styles.tabTextActive : styles.tabText}>
+                    <Text style={[styles.tabText, tab === "reports" && styles.tabTextActive]}>
                         Reports ({reports.length})
                     </Text>
                 </Pressable>
             </View>
 
-            {!!error && <Text style={styles.error}>{error}</Text>}
+            <StatusMessage type="error" message={error} />
 
             {tab === "members" ? (
                 <FlatList
@@ -211,34 +213,33 @@ export default function ManageMembers() {
                                     }}
                                     asChild
                                 >
-                                    <Pressable style={styles.rowText} accessibilityRole="link">
-                                        <Text style={styles.name}>
-                                            {item.displayName}
-                                            {isMe ? " (you)" : ""}
-                                        </Text>
-                                        <Text style={styles.details}>
-                                            {item.role === "admin" ? "Admin" : "Member"}
-                                            {item.joinedAt
-                                                ? ` · Joined ${item.joinedAt.toDate().toLocaleDateString()}`
-                                                : ""}
-                                        </Text>
+                                    <Pressable style={styles.rowMain} accessibilityRole="link">
+                                        <Avatar name={item.displayName} size={40} />
+                                        <View style={styles.rowText}>
+                                            <Text style={styles.name}>
+                                                {item.displayName}
+                                                {isMe ? " (you)" : ""}
+                                            </Text>
+                                            <Text style={styles.details}>
+                                                {item.role === "admin" ? "Admin" : "Member"}
+                                                {item.joinedAt
+                                                    ? ` · Joined ${item.joinedAt.toDate().toLocaleDateString()}`
+                                                    : ""}
+                                            </Text>
+                                        </View>
                                     </Pressable>
                                 </Link>
 
                                 {!isMe && (
-                                    <Pressable
+                                    <Button
+                                        title="Remove"
+                                        variant="danger"
+                                        size="sm"
                                         onPress={() => handleRemove(item)}
+                                        loading={removingUid === item.uid}
                                         disabled={removingUid !== null}
-                                        style={styles.removeButton}
-                                        accessibilityRole="button"
                                         accessibilityLabel={`Remove ${item.displayName}`}
-                                    >
-                                        {removingUid === item.uid ? (
-                                            <ActivityIndicator color="#FF0000" size="small" />
-                                        ) : (
-                                            <Text style={styles.removeText}>Remove</Text>
-                                        )}
-                                    </Pressable>
+                                    />
                                 )}
                             </View>
                         );
@@ -249,33 +250,32 @@ export default function ManageMembers() {
                     data={reports}
                     keyExtractor={(item) => item.id}
                     contentContainerStyle={styles.list}
-                    ListEmptyComponent={<Text style={styles.empty}>No open reports.</Text>}
+                    ListEmptyComponent={<Text style={styles.empty}>No open reports. Nice!</Text>}
                     renderItem={({ item }) => (
-                        <View style={styles.reportCard}>
-                            <Text style={styles.name}>{nameFor(item.reportedId)}</Text>
-                            <Text style={styles.reportReason}>{item.reason}</Text>
+                        <Card>
+                            <View style={styles.reportHeader}>
+                                <Text style={styles.name}>{nameFor(item.reportedId)}</Text>
+                                <Text style={styles.reasonBadge}>{item.reason}</Text>
+                            </View>
                             {!!item.details && <Text style={styles.reportDetails}>{item.details}</Text>}
                             <Text style={styles.details}>
                                 Reported by {nameFor(item.reporterId)}
                                 {item.createdAt ? ` · ${item.createdAt.toDate().toLocaleDateString()}` : ""}
                             </Text>
-                            <Pressable
+                            <Button
+                                title="Mark resolved"
+                                variant="outline"
+                                size="sm"
                                 onPress={() => handleResolve(item)}
+                                loading={resolvingId === item.id}
                                 disabled={resolvingId !== null}
                                 style={styles.resolveButton}
-                                accessibilityRole="button"
-                            >
-                                {resolvingId === item.id ? (
-                                    <ActivityIndicator color="#007BFF" size="small" />
-                                ) : (
-                                    <Text style={styles.resolveText}>Mark resolved</Text>
-                                )}
-                            </Pressable>
-                        </View>
+                            />
+                        </Card>
                     )}
                 />
             )}
-        </View>
+        </Screen>
     );
 }
 
@@ -284,115 +284,92 @@ const styles = StyleSheet.create({
         flex: 1,
         justifyContent: "center",
         alignItems: "center",
-        padding: 12,
-    },
-    container: {
-        flex: 1,
-        padding: 12,
+        backgroundColor: colors.background,
     },
     tabs: {
         flexDirection: "row",
-        marginBottom: 12,
-        borderBottomWidth: 1,
-        borderBottomColor: "#ccc",
+        backgroundColor: colors.card,
+        borderRadius: radius.md,
+        padding: spacing.xs,
+        ...shadow,
     },
     tab: {
         flex: 1,
-        paddingVertical: 12,
+        paddingVertical: spacing.sm,
         alignItems: "center",
-        borderBottomWidth: 2,
-        borderBottomColor: "transparent",
+        borderRadius: radius.sm,
     },
     tabActive: {
-        flex: 1,
-        paddingVertical: 12,
-        alignItems: "center",
-        borderBottomWidth: 2,
-        borderBottomColor: "#007BFF",
+        backgroundColor: colors.primary,
     },
     tabText: {
-        fontSize: 15,
-        color: "#666666",
+        fontSize: fontSize.md,
+        fontWeight: "600",
+        color: colors.textMuted,
     },
     tabTextActive: {
-        fontSize: 15,
-        color: "#007BFF",
-        fontWeight: "bold",
+        color: colors.textOnPrimary,
     },
     list: {
-        gap: 8,
+        gap: spacing.md,
+        paddingBottom: spacing.lg,
     },
     row: {
         flexDirection: "row",
         alignItems: "center",
-        borderWidth: 1,
-        borderColor: "#ccc",
-        borderRadius: 8,
-        padding: 12,
+        gap: spacing.md,
+        backgroundColor: colors.card,
+        borderRadius: radius.lg,
+        padding: spacing.md,
+        ...shadow,
+    },
+    rowMain: {
+        flex: 1,
+        flexDirection: "row",
+        alignItems: "center",
+        gap: spacing.md,
     },
     rowText: {
         flex: 1,
     },
     name: {
-        fontSize: 17,
-        fontWeight: "bold",
-        color: "#111111",
+        fontSize: fontSize.lg,
+        fontWeight: "700",
+        color: colors.text,
     },
     details: {
-        fontSize: 13,
-        color: "#666666",
+        fontSize: fontSize.sm,
+        color: colors.textMuted,
         marginTop: 2,
     },
-    removeButton: {
-        paddingVertical: 8,
-        paddingHorizontal: 12,
-        borderWidth: 1,
-        borderColor: "#FF0000",
-        borderRadius: 8,
-        minWidth: 80,
+    reportHeader: {
+        flexDirection: "row",
         alignItems: "center",
+        justifyContent: "space-between",
+        flexWrap: "wrap",
+        gap: spacing.sm,
     },
-    removeText: {
-        color: "#FF0000",
-        fontSize: 15,
-    },
-    reportCard: {
-        borderWidth: 1,
-        borderColor: "#ccc",
-        borderRadius: 8,
-        padding: 12,
-        gap: 4,
-    },
-    reportReason: {
-        fontSize: 15,
-        color: "#FF0000",
+    reasonBadge: {
+        fontSize: fontSize.sm,
+        fontWeight: "600",
+        color: colors.danger,
+        backgroundColor: colors.dangerLight,
+        paddingVertical: 2,
+        paddingHorizontal: spacing.sm,
+        borderRadius: radius.pill,
+        overflow: "hidden",
     },
     reportDetails: {
-        fontSize: 15,
-        color: "#111111",
+        fontSize: fontSize.md,
+        color: colors.text,
     },
     resolveButton: {
         alignSelf: "flex-start",
-        marginTop: 8,
-        paddingVertical: 8,
-        paddingHorizontal: 12,
-        borderWidth: 1,
-        borderColor: "#007BFF",
-        borderRadius: 8,
-        minWidth: 130,
-        alignItems: "center",
-    },
-    resolveText: {
-        color: "#007BFF",
-        fontSize: 15,
     },
     empty: {
         textAlign: "center",
-        color: "#666666",
-        marginTop: 24,
-    },
-    error: {
-        color: "#FF0000",
-        marginBottom: 12,
+        fontSize: fontSize.md,
+        color: colors.textMuted,
+        marginTop: spacing.xxl,
     },
 });

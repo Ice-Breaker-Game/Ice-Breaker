@@ -4,10 +4,12 @@ import { doc, getDoc, serverTimestamp, setDoc } from "firebase/firestore";
 import { useState } from "react";
 import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import { useAuth } from "@/context/AuthContext";
+import { useOrg } from "@/context/OrgContext";
 import { db } from "@/firebase";
 
 export default function JoinOrganization() {
     const { user } = useAuth();
+    const { setActiveOrgId } = useOrg();
     const [code, setCode] = useState("");
     const [error, setError] = useState("");
     const [submitting, setSubmitting] = useState(false);
@@ -54,6 +56,7 @@ export default function JoinOrganization() {
                 inviteCode: trimmedCode,
                 joinedAt: serverTimestamp(),
             });
+            await setActiveOrgId(orgId);
 
             router.replace({ pathname: "/organization/[orgId]", params: { orgId } });
         } catch (err) {

@@ -94,7 +94,7 @@ export default function Index() {
     setFinished(true);
     setSavingScore(true);
     setSaveMessage("");
-
+  }
     const record: ScoreRecord = {
       score,
       totalQuestions: questions.length,

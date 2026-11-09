@@ -62,6 +62,37 @@ Having trouble, or want to confirm everything works? See the [setup checklist an
 
 Use `npx expo install <package>` instead of `npm install`. It picks versions that are compatible with our Expo SDK.
 
+## Theme
+
+The app uses one shared teal-and-icy look (#64). **Don't hardcode colors.** Import them from `src/theme.ts`, and use the shared components in `src/components/` instead of building your own buttons and inputs:
+
+```tsx
+import { Avatar, Button, Card, Screen, StatusMessage, TextField } from "@/components";
+import { colors, fontSize, radius, spacing } from "@/theme";
+```
+
+| Color | Value | Used for |
+|---|---|---|
+| `colors.primary` | `#0e7490` | Buttons, links, active states |
+| `colors.primaryDark` | `#155e75` | Headings, the header bar |
+| `colors.primaryLight` | `#e0f2f7` | Selected rows, chips, tints |
+| `colors.background` | `#f0f7fa` | Screen background |
+| `colors.card` | `#ffffff` | Cards, inputs |
+| `colors.border` | `#cbd5e1` | Input borders, dividers |
+| `colors.text` / `colors.textMuted` | `#0f172a` / `#64748b` | Main text / labels, hints, dates |
+| `colors.placeholder` | `#94a3b8` | Placeholder text in inputs |
+| `colors.danger` / `colors.success` | `#dc2626` / `#16a34a` | Errors, Remove, Block, Report / success messages |
+
+| Component | What it's for |
+|---|---|
+| `<Screen>` | Every screen's background, padding and max width. `centered` for short forms, `scroll={false}` when the screen has its own `FlatList`, `safeArea` for screens without a header. |
+| `<Card>` | White rounded panel with a soft shadow. |
+| `<Button title="..." />` | `variant="primary"` (filled), `"outline"`, or `"danger"` (red outline). `size="sm"` for list rows. `loading` shows a spinner and disables it. Works inside `<Link asChild>`. |
+| `<TextField label="..." />` | Labeled text input with a teal focus border. Takes all normal `TextInput` props. |
+| `<StatusMessage type="error" message={error} />` | Tinted error / success / info message. Shows nothing when `message` is empty. |
+| `<Avatar name="..." photoURL={...} />` | Round profile picture, or initials if there isn't one. |
+| `<AuthHeader title="..." subtitle="..." />` | App name and title at the top of the logged-out screens. |
+
 ## Firebase
 
 We use the Firebase JS SDK with these services enabled:

@@ -1,11 +1,13 @@
-import { router } from "expo-router";
+import { router, Stack } from "expo-router";
 import { FirebaseError } from "firebase/app";
 import { doc, getDoc, serverTimestamp, setDoc } from "firebase/firestore";
 import { useState } from "react";
-import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
+import { StyleSheet, Text } from "react-native";
+import { Button, Card, Screen, StatusMessage, TextField } from "@/components";
 import { useAuth } from "@/context/AuthContext";
 import { useOrg } from "@/context/OrgContext";
 import { db } from "@/firebase";
+import { colors, fontSize } from "@/theme";
 
 export default function JoinOrganization() {
     const { user } = useAuth();
@@ -71,69 +73,47 @@ export default function JoinOrganization() {
     };
 
     return (
-        <View style={styles.container}>
-            <Text style={styles.header}>Join Organization</Text>
-            <TextInput
-                style={[styles.input, styles.codeInput]}
-                placeholder="Invite code"
-                value={code}
-                onChangeText={(text) => setCode(text.toUpperCase())}
-                autoCapitalize="characters"
-                autoCorrect={false}
-                autoComplete="off"
-                maxLength={6}
-            />
-            {!!error && <Text style={styles.error}>{error}</Text>}
-
-            <Pressable onPress={handleJoin} style={styles.button} disabled={submitting}>
-                {submitting ? (
-                    <ActivityIndicator color="#fff" size="small" />
-                ) : (
-                    <Text style={styles.buttonText}>Join</Text>
-                )}
-            </Pressable>
-        </View>
+        <Screen>
+            <Stack.Screen options={{ title: "Join organization" }} />
+            <Card>
+                <Text style={styles.title} accessibilityRole="header">
+                    Join with a code
+                </Text>
+                <Text style={styles.subtitle}>Ask an admin of the organization for its 6-character invite code.</Text>
+                <TextField
+                    label="Invite code"
+                    placeholder="ABC234"
+                    value={code}
+                    onChangeText={(text) => setCode(text.toUpperCase())}
+                    autoCapitalize="characters"
+                    autoCorrect={false}
+                    autoComplete="off"
+                    maxLength={6}
+                    returnKeyType="go"
+                    onSubmitEditing={handleJoin}
+                    style={styles.codeInput}
+                />
+                <StatusMessage type="error" message={error} />
+                <Button title="Join" onPress={handleJoin} loading={submitting} />
+            </Card>
+        </Screen>
     );
 }
 
 const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        justifyContent: "center",
-        padding: 12,
+    title: {
+        fontSize: fontSize.xl,
+        fontWeight: "700",
+        color: colors.primaryDark,
     },
-    header: {
-        fontSize: 28,
-        fontWeight: "bold",
-        color: "#111111",
-        marginBottom: 12,
-        textAlign: "center",
-    },
-    input: {
-        borderWidth: 1,
-        borderColor: "#ccc",
-        borderRadius: 8,
-        padding: 12,
-        marginBottom: 12,
+    subtitle: {
+        fontSize: fontSize.md,
+        color: colors.textMuted,
     },
     codeInput: {
-        fontSize: 20,
-        letterSpacing: 4,
+        fontSize: fontSize.xl,
+        fontWeight: "700",
+        letterSpacing: 6,
         textAlign: "center",
-    },
-    button: {
-        backgroundColor: "#007BFF",
-        paddingVertical: 12,
-        paddingHorizontal: 24,
-        borderRadius: 8,
-        alignItems: "center",
-    },
-    buttonText: {
-        color: "#fff",
-        fontSize: 15,
-    },
-    error: {
-        color: "#FF0000",
-        marginBottom: 12,
     },
 });

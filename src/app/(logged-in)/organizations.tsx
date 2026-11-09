@@ -2,9 +2,11 @@ import { Link, Stack, useFocusEffect } from "expo-router";
 import { collectionGroup, getDoc, getDocs, query, where } from "firebase/firestore";
 import { useCallback, useState } from "react";
 import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View } from "react-native";
+import { Button, Screen, StatusMessage } from "@/components";
 import { useAuth } from "@/context/AuthContext";
 import { useOrg } from "@/context/OrgContext";
 import { db } from "@/firebase";
+import { colors, fontSize, radius, shadow, spacing } from "@/theme";
 
 type Membership = {
     orgId: string;
@@ -61,29 +63,25 @@ export default function Organizations() {
     if (loading) {
         return (
             <View style={styles.centered}>
-                <ActivityIndicator />
+                <ActivityIndicator color={colors.primary} />
             </View>
         );
     }
 
     return (
-        <View style={styles.container}>
+        <Screen scroll={false}>
             <Stack.Screen options={{ title: "Organizations" }} />
 
             <View style={styles.actions}>
                 <Link href="/create-organization" asChild>
-                    <Pressable style={styles.button}>
-                        <Text style={styles.buttonText}>Create</Text>
-                    </Pressable>
+                    <Button title="Create" style={styles.actionButton} />
                 </Link>
                 <Link href="/join-organization" asChild>
-                    <Pressable style={StyleSheet.flatten([styles.button, styles.secondaryButton])}>
-                        <Text style={styles.secondaryButtonText}>Join with code</Text>
-                    </Pressable>
+                    <Button title="Join with code" variant="outline" style={styles.actionButton} />
                 </Link>
             </View>
 
-            {!!error && <Text style={styles.error}>{error}</Text>}
+            <StatusMessage type="error" message={error} />
 
             <FlatList
                 data={memberships}
@@ -91,9 +89,12 @@ export default function Organizations() {
                 contentContainerStyle={styles.list}
                 ListEmptyComponent={
                     error ? null : (
-                        <Text style={styles.empty}>
-                            You&apos;re not in any organizations yet. Create one, or join one with an invite code.
-                        </Text>
+                        <View style={styles.empty}>
+                            <Text style={styles.emptyTitle}>No organizations yet</Text>
+                            <Text style={styles.emptyText}>
+                                Create one for your group, or join one with an invite code.
+                            </Text>
+                        </View>
                     )
                 }
                 renderItem={({ item }) => {
@@ -105,12 +106,13 @@ export default function Organizations() {
                                 onPress={() => setActiveOrgId(item.orgId)}
                                 accessibilityRole="button"
                                 accessibilityState={{ selected: isActive }}
+                                accessibilityHint="Makes this your active organization"
                             >
                                 <Text style={styles.orgName}>{item.name}</Text>
-                                <Text style={styles.role}>
-                                    {item.role === "admin" ? "Admin" : "Member"}
-                                    {isActive ? " · Active" : ""}
-                                </Text>
+                                <View style={styles.badges}>
+                                    <Text style={styles.roleBadge}>{item.role === "admin" ? "Admin" : "Member"}</Text>
+                                    {isActive && <Text style={styles.activeBadge}>Active</Text>}
+                                </View>
                             </Pressable>
                             <Link
                                 href={{ pathname: "/organization/[orgId]", params: { orgId: item.orgId } }}
@@ -122,7 +124,7 @@ export default function Organizations() {
                     );
                 }}
             />
-        </View>
+        </Screen>
     );
 }
 
@@ -131,76 +133,84 @@ const styles = StyleSheet.create({
         flex: 1,
         justifyContent: "center",
         alignItems: "center",
-    },
-    container: {
-        flex: 1,
-        padding: 12,
+        backgroundColor: colors.background,
     },
     actions: {
         flexDirection: "row",
-        gap: 12,
-        marginBottom: 16,
+        gap: spacing.md,
     },
-    button: {
+    actionButton: {
         flex: 1,
-        backgroundColor: "#007BFF",
-        paddingVertical: 12,
-        borderRadius: 8,
-        alignItems: "center",
-    },
-    buttonText: {
-        color: "#fff",
-        fontSize: 15,
-    },
-    secondaryButton: {
-        backgroundColor: "transparent",
-        borderWidth: 1,
-        borderColor: "#007BFF",
-    },
-    secondaryButtonText: {
-        color: "#007BFF",
-        fontSize: 15,
     },
     list: {
-        gap: 8,
+        gap: spacing.md,
+        paddingBottom: spacing.lg,
     },
     row: {
         flexDirection: "row",
         alignItems: "center",
-        borderWidth: 1,
-        borderColor: "#ccc",
-        borderRadius: 8,
+        backgroundColor: colors.card,
+        borderRadius: radius.lg,
+        borderWidth: 2,
+        borderColor: "transparent",
+        ...shadow,
     },
     activeRow: {
-        borderColor: "#007BFF",
-        backgroundColor: "#EAF3FF",
+        borderColor: colors.primary,
+        backgroundColor: colors.primaryLight,
     },
     rowMain: {
         flex: 1,
-        padding: 12,
+        padding: spacing.lg,
+        gap: spacing.sm,
     },
     orgName: {
-        fontSize: 17,
-        fontWeight: "bold",
-        color: "#111111",
+        fontSize: fontSize.lg,
+        fontWeight: "700",
+        color: colors.text,
     },
-    role: {
-        fontSize: 13,
-        color: "#666666",
-        marginTop: 2,
+    badges: {
+        flexDirection: "row",
+        gap: spacing.sm,
+    },
+    roleBadge: {
+        fontSize: fontSize.sm,
+        color: colors.textMuted,
+        backgroundColor: colors.background,
+        paddingVertical: 2,
+        paddingHorizontal: spacing.sm,
+        borderRadius: radius.pill,
+        overflow: "hidden",
+    },
+    activeBadge: {
+        fontSize: fontSize.sm,
+        fontWeight: "700",
+        color: colors.textOnPrimary,
+        backgroundColor: colors.primary,
+        paddingVertical: 2,
+        paddingHorizontal: spacing.sm,
+        borderRadius: radius.pill,
+        overflow: "hidden",
     },
     viewLink: {
-        color: "#007BFF",
-        fontSize: 15,
-        padding: 12,
+        color: colors.primary,
+        fontSize: fontSize.md,
+        fontWeight: "700",
+        padding: spacing.lg,
     },
     empty: {
-        textAlign: "center",
-        color: "#666666",
-        marginTop: 24,
+        alignItems: "center",
+        gap: spacing.xs,
+        marginTop: spacing.xxl,
     },
-    error: {
-        color: "#FF0000",
-        marginBottom: 12,
+    emptyTitle: {
+        fontSize: fontSize.lg,
+        fontWeight: "700",
+        color: colors.text,
+    },
+    emptyText: {
+        fontSize: fontSize.md,
+        color: colors.textMuted,
+        textAlign: "center",
     },
 });

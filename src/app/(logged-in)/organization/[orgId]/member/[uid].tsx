@@ -12,11 +12,12 @@ import {
     updateDoc,
 } from "firebase/firestore";
 import { useEffect, useState } from "react";
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
+import { ActivityIndicator, Pressable, StyleSheet, Text, View } from "react-native";
+import { Avatar, Button, Card, Screen, StatusMessage, TextField } from "@/components";
 import { useAuth } from "@/context/AuthContext";
 import { db } from "@/firebase";
+import { colors, fontSize, radius, spacing } from "@/theme";
 import { confirmAction } from "@/utils/confirm";
-import { getInitials } from "@/utils/initials";
 
 const REPORT_REASONS = ["Harassment or bullying", "Hate speech", "Inappropriate content", "Spam", "Other"];
 const DETAILS_MAX_LENGTH = 500;
@@ -163,78 +164,73 @@ export default function MemberProfile() {
     if (loading) {
         return (
             <View style={styles.centered}>
-                <ActivityIndicator />
+                <ActivityIndicator color={colors.primary} />
             </View>
         );
     }
 
     if (!member) {
         return (
-            <View style={styles.centered}>
+            <Screen centered>
                 <Stack.Screen options={{ title: "Profile" }} />
-                <Text style={styles.error}>{error}</Text>
-            </View>
+                <StatusMessage type="error" message={error} />
+            </Screen>
         );
     }
 
     return (
-        <ScrollView contentContainerStyle={styles.container}>
+        <Screen>
             <Stack.Screen options={{ title: member.displayName }} />
 
-            <View style={styles.avatar}>
-                <Text style={styles.initials}>{getInitials(member.displayName)}</Text>
-            </View>
-            <Text style={styles.name}>{member.displayName}</Text>
-            <Text style={styles.details}>
-                {member.role === "admin" ? "Admin" : "Member"}
-                {member.joinedAt ? ` · Joined ${member.joinedAt.toDate().toLocaleDateString()}` : ""}
-            </Text>
+            <Card style={styles.profileCard}>
+                <Avatar name={member.displayName} size={112} />
+                <Text style={styles.name} accessibilityRole="header">
+                    {member.displayName}
+                </Text>
+                <Text style={styles.details}>
+                    {member.role === "admin" ? "Admin" : "Member"}
+                    {member.joinedAt ? ` · Joined ${member.joinedAt.toDate().toLocaleDateString()}` : ""}
+                </Text>
 
-            {isMe ? (
-                <Text style={styles.details}>This is you.</Text>
-            ) : (
-                <View style={styles.actions}>
-                    <Pressable
-                        onPress={isBlocked ? handleUnblock : handleBlock}
-                        disabled={savingBlock}
-                        style={styles.outlineButton}
-                        accessibilityRole="button"
-                    >
-                        {savingBlock ? (
-                            <ActivityIndicator color="#FF0000" size="small" />
-                        ) : (
-                            <Text style={styles.dangerText}>{isBlocked ? "Unblock" : "Block"}</Text>
+                {isMe ? (
+                    <Text style={styles.details}>This is you.</Text>
+                ) : (
+                    <View style={styles.actions}>
+                        <Button
+                            title={isBlocked ? "Unblock" : "Block"}
+                            variant="danger"
+                            onPress={isBlocked ? handleUnblock : handleBlock}
+                            loading={savingBlock}
+                            style={styles.actionButton}
+                        />
+                        {!reportFormOpen && (
+                            <Button
+                                title="Report"
+                                variant="danger"
+                                onPress={() => setReportFormOpen(true)}
+                                style={styles.actionButton}
+                            />
                         )}
-                    </Pressable>
-
-                    {!reportFormOpen && (
-                        <Pressable
-                            onPress={() => setReportFormOpen(true)}
-                            style={styles.outlineButton}
-                            accessibilityRole="button"
-                        >
-                            <Text style={styles.dangerText}>Report</Text>
-                        </Pressable>
-                    )}
-                </View>
-            )}
+                    </View>
+                )}
+            </Card>
 
             {reportFormOpen && (
-                <View style={styles.reportForm}>
+                <Card>
                     <Text style={styles.formTitle}>Report {member.displayName}</Text>
                     <Text style={styles.label}>Reason</Text>
-                    <View style={styles.reasons}>
+                    <View style={styles.reasons} accessibilityRole="radiogroup">
                         {REPORT_REASONS.map((option) => {
                             const selected = option === reason;
                             return (
                                 <Pressable
                                     key={option}
                                     onPress={() => setReason(option)}
-                                    style={selected ? styles.reasonSelected : styles.reason}
+                                    style={[styles.reason, selected && styles.reasonSelected]}
                                     accessibilityRole="radio"
                                     accessibilityState={{ checked: selected }}
                                 >
-                                    <Text style={selected ? styles.reasonTextSelected : styles.reasonText}>
+                                    <Text style={[styles.reasonText, selected && styles.reasonTextSelected]}>
                                         {option}
                                     </Text>
                                 </Pressable>
@@ -242,45 +238,40 @@ export default function MemberProfile() {
                         })}
                     </View>
 
-                    <Text style={styles.label}>Details (optional)</Text>
-                    <TextInput
-                        style={styles.input}
+                    <TextField
+                        label="Details (optional)"
                         value={details}
                         onChangeText={setDetails}
                         placeholder="What happened?"
                         multiline
                         maxLength={DETAILS_MAX_LENGTH}
+                        style={styles.detailsInput}
                     />
                     <Text style={styles.counter}>
                         {details.length}/{DETAILS_MAX_LENGTH}
                     </Text>
 
-                    <View style={styles.formButtons}>
-                        <Pressable
+                    <View style={styles.actions}>
+                        <Button
+                            title="Cancel"
+                            variant="outline"
                             onPress={closeReportForm}
                             disabled={submittingReport}
-                            style={[styles.formButton, styles.cancelButton]}
-                        >
-                            <Text style={styles.cancelText}>Cancel</Text>
-                        </Pressable>
-                        <Pressable
+                            style={styles.actionButton}
+                        />
+                        <Button
+                            title="Send report"
                             onPress={handleSubmitReport}
-                            disabled={submittingReport}
-                            style={[styles.formButton, styles.submitButton]}
-                        >
-                            {submittingReport ? (
-                                <ActivityIndicator color="#fff" size="small" />
-                            ) : (
-                                <Text style={styles.submitText}>Send report</Text>
-                            )}
-                        </Pressable>
+                            loading={submittingReport}
+                            style={styles.actionButton}
+                        />
                     </View>
-                </View>
+                </Card>
             )}
 
-            {!!error && <Text style={styles.error}>{error}</Text>}
-            {!!message && <Text style={styles.message}>{message}</Text>}
-        </ScrollView>
+            <StatusMessage type="error" message={error} />
+            <StatusMessage type="success" message={message} />
+        </Screen>
     );
 }
 
@@ -289,146 +280,72 @@ const styles = StyleSheet.create({
         flex: 1,
         justifyContent: "center",
         alignItems: "center",
-        padding: 12,
+        backgroundColor: colors.background,
     },
-    container: {
-        padding: 16,
-        gap: 12,
-        width: "100%",
-        maxWidth: 480,
-        alignSelf: "center",
+    profileCard: {
         alignItems: "center",
-    },
-    avatar: {
-        width: 120,
-        height: 120,
-        borderRadius: 60,
-        backgroundColor: "#007BFF",
-        justifyContent: "center",
-        alignItems: "center",
-    },
-    initials: {
-        color: "#fff",
-        fontSize: 40,
-        fontWeight: "bold",
     },
     name: {
-        fontSize: 24,
-        fontWeight: "bold",
-        color: "#111111",
+        fontSize: fontSize.xl,
+        fontWeight: "700",
+        color: colors.text,
+        textAlign: "center",
     },
     details: {
-        fontSize: 14,
-        color: "#666666",
+        fontSize: fontSize.md,
+        color: colors.textMuted,
+        textAlign: "center",
     },
     actions: {
         flexDirection: "row",
-        gap: 12,
-        marginTop: 8,
-    },
-    outlineButton: {
-        paddingVertical: 10,
-        paddingHorizontal: 24,
-        borderWidth: 1,
-        borderColor: "#FF0000",
-        borderRadius: 8,
-        minWidth: 110,
-        alignItems: "center",
-    },
-    dangerText: {
-        color: "#FF0000",
-        fontSize: 15,
-    },
-    reportForm: {
+        gap: spacing.md,
         alignSelf: "stretch",
-        gap: 8,
-        marginTop: 8,
-        padding: 12,
-        borderWidth: 1,
-        borderColor: "#ccc",
-        borderRadius: 8,
+    },
+    actionButton: {
+        flex: 1,
     },
     formTitle: {
-        fontSize: 18,
-        fontWeight: "bold",
-        color: "#111111",
+        fontSize: fontSize.lg,
+        fontWeight: "700",
+        color: colors.text,
     },
     label: {
-        fontSize: 14,
-        color: "#666666",
-        marginTop: 4,
+        fontSize: fontSize.sm,
+        fontWeight: "600",
+        color: colors.textMuted,
     },
     reasons: {
         flexDirection: "row",
         flexWrap: "wrap",
-        gap: 8,
+        gap: spacing.sm,
     },
     reason: {
-        paddingVertical: 8,
-        paddingHorizontal: 12,
-        borderWidth: 1,
-        borderColor: "#ccc",
-        borderRadius: 16,
+        paddingVertical: spacing.sm,
+        paddingHorizontal: spacing.md,
+        borderWidth: 1.5,
+        borderColor: colors.border,
+        borderRadius: radius.pill,
+        backgroundColor: colors.card,
     },
     reasonSelected: {
-        paddingVertical: 8,
-        paddingHorizontal: 12,
-        borderWidth: 1,
-        borderColor: "#007BFF",
-        borderRadius: 16,
-        backgroundColor: "#007BFF",
+        borderColor: colors.primary,
+        backgroundColor: colors.primary,
     },
     reasonText: {
-        color: "#111111",
-        fontSize: 14,
+        fontSize: fontSize.sm,
+        color: colors.text,
     },
     reasonTextSelected: {
-        color: "#fff",
-        fontSize: 14,
+        color: colors.textOnPrimary,
+        fontWeight: "600",
     },
-    input: {
-        borderWidth: 1,
-        borderColor: "#ccc",
-        borderRadius: 8,
-        padding: 12,
-        minHeight: 90,
+    detailsInput: {
+        minHeight: 100,
         textAlignVertical: "top",
     },
     counter: {
-        fontSize: 12,
-        color: "#666666",
+        fontSize: fontSize.sm,
+        color: colors.textMuted,
         textAlign: "right",
-    },
-    formButtons: {
-        flexDirection: "row",
-        gap: 12,
-    },
-    formButton: {
-        flex: 1,
-        paddingVertical: 12,
-        borderRadius: 8,
-        alignItems: "center",
-    },
-    cancelButton: {
-        borderWidth: 1,
-        borderColor: "#007BFF",
-    },
-    cancelText: {
-        color: "#007BFF",
-        fontSize: 15,
-    },
-    submitButton: {
-        backgroundColor: "#FF0000",
-    },
-    submitText: {
-        color: "#fff",
-        fontSize: 15,
-    },
-    error: {
-        color: "#FF0000",
-    },
-    message: {
-        color: "#333333",
-        textAlign: "center",
     },
 });

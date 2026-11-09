@@ -1,5 +1,5 @@
 import * as Clipboard from "expo-clipboard";
-import { Stack, useLocalSearchParams } from "expo-router";
+import { Link, Stack, useLocalSearchParams } from "expo-router";
 import { doc, getDoc, serverTimestamp, writeBatch } from "firebase/firestore";
 import { useEffect, useState } from "react";
 import { ActivityIndicator, Pressable, Share, StyleSheet, Text, View } from "react-native";
@@ -138,6 +138,12 @@ export default function OrganizationPage() {
                             <Text style={styles.secondaryButtonText}>Regenerate code</Text>
                         )}
                     </Pressable>
+
+                    <Link href={{ pathname: "/organization/[orgId]/members", params: { orgId } }} asChild>
+                        <Pressable style={StyleSheet.flatten([styles.button, styles.secondaryButton])}>
+                            <Text style={styles.secondaryButtonText}>Manage members</Text>
+                        </Pressable>
+                    </Link>
 
                     {!!message && <Text style={styles.message}>{message}</Text>}
                 </View>

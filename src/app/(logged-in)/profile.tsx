@@ -3,11 +3,23 @@ import { ImageManipulator, SaveFormat } from "expo-image-manipulator";
 import * as ImagePicker from "expo-image-picker";
 import { Stack } from "expo-router";
 import { signOut } from "firebase/auth";
-import { collectionGroup, doc, getDoc, getDocs, query, updateDoc, where, writeBatch } from "firebase/firestore";
+import {
+    arrayRemove,
+    collectionGroup,
+    deleteField,
+    doc,
+    getDoc,
+    getDocs,
+    query,
+    updateDoc,
+    where,
+    writeBatch,
+} from "firebase/firestore";
 import { useEffect, useState } from "react";
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { useAuth } from "@/context/AuthContext";
 import { auth, db } from "@/firebase";
+import { getInitials } from "@/utils/initials";
 
 // Profile pictures are saved in Firestore as small JPEG data URLs, because Firebase Storage
 // needs the paid plan. Shrinking the longest side to 256px keeps each one around 20-40 KB.
@@ -19,16 +31,10 @@ type Profile = {
     photoURL: string | null;
 };
 
-// "Jane Doe" -> "JD", shown when the user has no profile picture.
-function getInitials(name: string) {
-    const initials = name
-        .split(" ")
-        .filter(Boolean)
-        .slice(0, 2)
-        .map((word) => word[0].toUpperCase())
-        .join("");
-    return initials || "?";
-}
+type BlockedUser = {
+    uid: string;
+    displayName: string;
+};
 
 export default function ProfileScreen() {
     const { user } = useAuth();
@@ -41,6 +47,8 @@ export default function ProfileScreen() {
     const [savingName, setSavingName] = useState(false);
     const [savingPhoto, setSavingPhoto] = useState(false);
     const [loggingOut, setLoggingOut] = useState(false);
+    const [blockedUsers, setBlockedUsers] = useState<BlockedUser[]>([]);
+    const [unblockingUid, setUnblockingUid] = useState<string | null>(null);
 
     useEffect(() => {
         const loadProfile = async () => {
@@ -52,6 +60,13 @@ export default function ProfileScreen() {
                     email: data?.email ?? user.email ?? "",
                     photoURL: data?.photoURL ?? null,
                 });
+
+                // Other users' docs are private, so the names are saved next to the IDs when blocking.
+                const blockedIds: string[] = data?.blockedUserIds ?? [];
+                const blockedNames: Record<string, string> = data?.blockedUserNames ?? {};
+                setBlockedUsers(
+                    blockedIds.map((uid) => ({ uid, displayName: blockedNames[uid] || "Unknown user" }))
+                );
             } catch {
                 setError("Could not load your profile, please try again later");
             } finally {
@@ -172,6 +187,25 @@ export default function ProfileScreen() {
         }
     };
 
+    const handleUnblock = async (blockedUser: BlockedUser) => {
+        setError("");
+        setMessage("");
+        setUnblockingUid(blockedUser.uid);
+
+        try {
+            await updateDoc(doc(db, "users", user.uid), {
+                blockedUserIds: arrayRemove(blockedUser.uid),
+                [`blockedUserNames.${blockedUser.uid}`]: deleteField(),
+            });
+            setBlockedUsers((current) => current.filter((b) => b.uid !== blockedUser.uid));
+            setMessage(`${blockedUser.displayName} is unblocked`);
+        } catch {
+            setError(`Could not unblock ${blockedUser.displayName}, please try again later`);
+        } finally {
+            setUnblockingUid(null);
+        }
+    };
+
     const handleLogout = async () => {
         setLoggingOut(true);
         try {
@@ -278,6 +312,32 @@ export default function ProfileScreen() {
             <View style={styles.section}>
                 <Text style={styles.label}>Email</Text>
                 <Text style={styles.value}>{profile.email}</Text>
+            </View>
+
+            <View style={styles.section}>
+                <Text style={styles.label}>Blocked users</Text>
+                {blockedUsers.length === 0 ? (
+                    <Text style={styles.emptyText}>You haven&apos;t blocked anyone.</Text>
+                ) : (
+                    blockedUsers.map((blockedUser) => (
+                        <View key={blockedUser.uid} style={styles.valueRow}>
+                            <Text style={styles.value}>{blockedUser.displayName}</Text>
+                            <Pressable
+                                onPress={() => handleUnblock(blockedUser)}
+                                disabled={unblockingUid !== null}
+                                accessibilityRole="button"
+                                accessibilityLabel={`Unblock ${blockedUser.displayName}`}
+                                hitSlop={8}
+                            >
+                                {unblockingUid === blockedUser.uid ? (
+                                    <ActivityIndicator color="#007BFF" size="small" />
+                                ) : (
+                                    <Text style={styles.link}>Unblock</Text>
+                                )}
+                            </Pressable>
+                        </View>
+                    ))
+                )}
             </View>
 
             {!!error && <Text style={styles.error}>{error}</Text>}
@@ -405,6 +465,10 @@ const styles = StyleSheet.create({
     logoutText: {
         color: "#FF0000",
         fontSize: 15,
+    },
+    emptyText: {
+        fontSize: 15,
+        color: "#666666",
     },
     error: {
         color: "#FF0000",

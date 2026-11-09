@@ -1,18 +1,25 @@
 import * as Clipboard from "expo-clipboard";
 import { Link, Stack, useLocalSearchParams } from "expo-router";
-import { doc, getDoc, serverTimestamp, writeBatch } from "firebase/firestore";
+import { collection, doc, getDoc, getDocs, serverTimestamp, writeBatch } from "firebase/firestore";
 import { useEffect, useState } from "react";
-import { ActivityIndicator, Pressable, Share, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, Pressable, ScrollView, Share, StyleSheet, Text, View } from "react-native";
 import { useAuth } from "@/context/AuthContext";
 import { db } from "@/firebase";
 import { generateUniqueInviteCode } from "@/utils/inviteCode";
 
-// Placeholder organization page. The real one is built in #33.
+type MemberSummary = {
+    uid: string;
+    displayName: string;
+    role: string;
+};
+
 export default function OrganizationPage() {
     const { orgId } = useLocalSearchParams<{ orgId: string }>();
     const { user } = useAuth();
     const [name, setName] = useState("");
     const [isAdmin, setIsAdmin] = useState(false);
+    const [isMember, setIsMember] = useState(false);
+    const [members, setMembers] = useState<MemberSummary[]>([]);
     const [inviteCode, setInviteCode] = useState("");
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
@@ -37,6 +44,19 @@ export default function OrganizationPage() {
                 if (admin) {
                     const inviteSnapshot = await getDoc(doc(db, "organizations", orgId, "private", "invite"));
                     setInviteCode(inviteSnapshot.data()?.code ?? "");
+                }
+
+                // Everyone in the organization can see who else is in it (#35).
+                if (memberSnapshot.exists()) {
+                    setIsMember(true);
+                    const membersSnapshot = await getDocs(collection(db, "organizations", orgId, "members"));
+                    const results = membersSnapshot.docs.map((memberDoc) => ({
+                        uid: memberDoc.id,
+                        displayName: memberDoc.data().displayName || "Unnamed user",
+                        role: memberDoc.data().role,
+                    }));
+                    results.sort((a, b) => a.displayName.localeCompare(b.displayName));
+                    setMembers(results);
                 }
             } catch {
                 setError("Could not load this organization, please try again later");
@@ -106,7 +126,7 @@ export default function OrganizationPage() {
     }
 
     return (
-        <View style={styles.container}>
+        <ScrollView contentContainerStyle={styles.scrollContainer}>
             <Stack.Screen options={{ title: name }} />
             <Text style={styles.header}>{name}</Text>
 
@@ -148,7 +168,31 @@ export default function OrganizationPage() {
                     {!!message && <Text style={styles.message}>{message}</Text>}
                 </View>
             )}
-        </View>
+
+            {isMember && (
+                <View style={styles.membersSection}>
+                    <Text style={styles.sectionTitle}>Members ({members.length})</Text>
+                    {members.map((member) => (
+                        <Link
+                            key={member.uid}
+                            href={{
+                                pathname: "/organization/[orgId]/member/[uid]",
+                                params: { orgId, uid: member.uid },
+                            }}
+                            asChild
+                        >
+                            <Pressable style={styles.memberRow} accessibilityRole="link">
+                                <Text style={styles.memberName}>
+                                    {member.displayName}
+                                    {member.uid === user.uid ? " (you)" : ""}
+                                </Text>
+                                <Text style={styles.memberRole}>{member.role === "admin" ? "Admin" : "Member"}</Text>
+                            </Pressable>
+                        </Link>
+                    ))}
+                </View>
+            )}
+        </ScrollView>
     );
 }
 
@@ -159,11 +203,44 @@ const styles = StyleSheet.create({
         alignItems: "center",
         padding: 12,
     },
+    scrollContainer: {
+        alignItems: "center",
+        padding: 16,
+        gap: 24,
+    },
+    membersSection: {
+        width: "100%",
+        maxWidth: 320,
+        gap: 8,
+    },
+    sectionTitle: {
+        fontSize: 18,
+        fontWeight: "bold",
+        color: "#111111",
+    },
+    memberRow: {
+        flexDirection: "row",
+        justifyContent: "space-between",
+        alignItems: "center",
+        paddingVertical: 12,
+        paddingHorizontal: 12,
+        borderWidth: 1,
+        borderColor: "#ccc",
+        borderRadius: 8,
+    },
+    memberName: {
+        fontSize: 16,
+        color: "#111111",
+        flexShrink: 1,
+    },
+    memberRole: {
+        fontSize: 13,
+        color: "#666666",
+    },
     header: {
         fontSize: 28,
         fontWeight: "bold",
         color: "#111111",
-        marginBottom: 24,
         textAlign: "center",
     },
     inviteSection: {

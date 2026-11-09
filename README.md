@@ -2,21 +2,32 @@
 
 ## Project Overview
 
-**Ice Breaker** is a location-based educational game platform designed to help students connect with their classmates while learning course material. The platform allows teachers to create interactive games based on their course content, which students can then play together at approved locations across campus.
+**Ice Breaker** is a location-based game platform that helps people in the same community meet and connect. Any organization can use it: schools, libraries, clubs, workplaces, community centers and more. Organizers create interactive games with their own content, and members play them together in person at approved locations.
 
-The goal of **Ice Breaker** is to make learning more social and engaging while giving students a natural way to interact with people around them. Teachers can create and manage games through a simple game-building interface, while administrators have moderation tools to help ensure that the platform remains safe, appropriate, and accessible for everyone.
+The goal of **Ice Breaker** is to give people a fun, natural way to interact with the people around them. Organizers create and manage games through a simple game-building interface, and they have moderation tools to keep their organization safe, appropriate and accessible for everyone.
 
 ## Product Vision
 
-> **For** students, teachers, and administrators who want a safe and engaging way for classmates to connect and learn together, **Ice Breaker** is a location-based educational game platform that allows teachers to turn course content into games that students can play together at approved locations across campus. **Unlike** generic quiz tools and apps, our product combines peer connection with course review, provides teachers with a simple game-building interface, and gives administrators moderation tools to help keep the experience safe, appropriate, and accessible to everyone.
+> **For** organizations and their members who want a safe and engaging way for people to meet and connect, **Ice Breaker** is a location-based game platform that lets organizers turn their own content into games that members play together at approved locations. **Unlike** generic quiz and trivia apps, our product combines in-person connection with gameplay, gives organizers a simple game-building interface, and gives them moderation tools to keep the experience safe, appropriate and accessible to everyone.
+
+## Who It's For
+
+Organizations of any kind. For example:
+
+* **Schools**: classmates review course material together.
+* **Libraries**: patrons meet at events, book clubs or programs.
+* **Clubs and community groups**: new members get to know each other.
+* **Workplaces**: coworkers connect during onboarding or team events.
+
+Each organization has **admins** (the organizers who create games and moderate) and **members** (the people who join with an invite code and play).
 
 ## Key Features
 
-* 📍 **Location-Based Gameplay** — Connect students at approved locations across campus.
-* 🎮 **Interactive Games** — Students play games together while reviewing course material.
-* 👩‍🏫 **Teacher Game Builder** — Teachers can create games using their own course content.
-* 🛡️ **Administrator Moderation** — Administrators can monitor and manage content to maintain a safe environment.
-* 🤝 **Peer Connection** — Encourage students to meet and interact with their classmates through gameplay.
+* 📍 **Location-Based Gameplay**: connects members at approved locations, like a classroom, library branch or event space.
+* 🎮 **Interactive Games**: members play games together in person.
+* 🛠️ **Game Builder**: organizers create games with their own content.
+* 🛡️ **Moderation**: organization admins can manage members and review reports to keep everyone safe.
+* 🤝 **Peer Connection**: helps people meet and interact with others in their community through gameplay.
 
 ## Getting Started
 

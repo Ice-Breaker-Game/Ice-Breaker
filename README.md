@@ -93,7 +93,8 @@ One document per user. The document ID is the user's Firebase Auth `uid`.
 | `displayName` | string | Name shown to other users |
 | `email` | string | Login email |
 | `photoURL` | string \| null | Profile picture as a data URL (`data:image/jpeg;base64,...`), shrunk so its longest side is 256px (about 20–40 KB). Works anywhere an image URL does. `null` until the user sets one. |
-| `blockedUserIds` | array of strings | `uid`s this user has blocked. Starts as `[]`. |
+| `blockedUserIds` | array of strings | `uid`s this user has blocked. Starts as `[]`. Matching must skip these users (see **Blocking** below). |
+| `blockedUserNames` | map | `{ [uid]: displayName }` for each blocked user, saved when blocking (#35). Other users' docs are private, so this is how the Profile screen shows who you've blocked. Missing on users who never blocked anyone. |
 | `createdAt` | timestamp | When the account was created |
 
 ### `organizations/{orgId}`
@@ -139,18 +140,20 @@ One document per active invite code. The document ID **is** the code (6 characte
 
 When an admin regenerates the code, the old `inviteCodes/{code}` doc is deleted, so the old code stops working.
 
-### `reports/{reportId}`
+### `organizations/{orgId}/reports/{reportId}`
 
-The document ID is generated automatically by Firestore.
+A subcollection inside each organization, so only that organization's admins can read its reports (#35). The document ID is generated automatically by Firestore.
 
 | Field | Type | Description |
 |---|---|---|
 | `reporterId` | string | `uid` of the user making the report |
 | `reportedId` | string | `uid` of the user being reported |
-| `orgId` | string | Organization the report belongs to |
-| `reason` | string | Why the user is being reported |
-| `status` | string | Starts as `"open"` |
+| `reason` | string | One of: Harassment or bullying, Hate speech, Inappropriate content, Spam, Other |
+| `details` | string | Optional extra text from the reporter (500 characters max). `""` if left empty. |
+| `status` | string | `"open"`, or `"resolved"` after an admin marks it resolved |
 | `createdAt` | timestamp | When the report was made |
+| `resolvedBy` | string | `uid` of the admin who resolved it. Only on resolved reports. |
+| `resolvedAt` | timestamp | When it was resolved. Only on resolved reports. |
 
 ## Security Rules
 
@@ -166,22 +169,27 @@ Current rules:
 
   The only update allowed is a user changing the `displayName` copy on their **own** member docs (#29). Nothing else can be updated, so nobody can join twice or change their own role.
 
-  **Admins** of the organization can **read all** its member docs and **delete** any member doc **except their own** (#34).
+  **Every member** of the organization can **read all** its member docs, so they can see who's in it and open each other's profiles (#35). **Admins** can **delete** any member doc **except their own** (#34).
 * **`{path=**}/members/{memberId}`** (collection group): a user can **read their own** member docs across **all** organizations. This is what lets the Organizations screen find every organization the user belongs to with one `collectionGroup(db, "members")` query (#33).
 * **`organizations/{orgId}/private/{docId}`**: only admins of that organization can **read**, **create** and **update** (#31).
+* **`organizations/{orgId}/reports/{reportId}`**: any **member** can **create** a report about another member of the same organization (not themselves), with `status: "open"` and only the fields listed in the schema. Only **admins** can **read** reports, and they can **update** one only to mark it `"resolved"` with `resolvedBy` and `resolvedAt` (#35).
 * **`inviteCodes/{code}`**: any signed-in user can **look up one code** (`get`), but can't list them all. Only admins of the code's organization can **create** or **delete** it. There's no update rule, so an existing code can never be taken over (#31).
 
-The rules use two helper functions: `isAdmin(orgId)` checks the user's member doc with `get()`, and `isAdminAfter(orgId)` checks it with `getAfter()` for batches that create the member doc at the same time.
+The rules use three helper functions: `isMember(orgId)` checks that the user's member doc exists, `isAdmin(orgId)` checks its role with `get()`, and `isAdminAfter(orgId)` checks it with `getAfter()` for batches that create the member doc at the same time.
 
-**Still blocked. Add rules as part of these issues:**
-
-* `reports` (#35)
+Everything else is blocked. Add a rule when a new feature needs it.
 
 If you change the rules, update this section too, so it matches what's published in the console.
 
 ### Indexes
 
 * **`members` collection group, field `uid`**: needed for the `collectionGroup(db, "members")` query on the Organizations screen (#33). Firestore → **Indexes → Single field → Add exemption**, collection ID `members`, field `uid`, with **Collection group** scope enabled for Ascending.
+
+## Blocking
+
+Users block each other from another member's profile (`/organization/{orgId}/member/{uid}`) and unblock from their own Profile (#35). Blocked `uid`s are saved in the blocker's `users/{uid}.blockedUserIds`.
+
+**Matching must skip any pair where either user has blocked the other.** One catch for whoever builds matching: `users/{uid}` docs are private, so a user's app can only read **its own** blocked list. It can't see whether the other person blocked them. Matching code needs a way to check both directions, for example a rule that lets matching read `blockedUserIds`, or saving blocks somewhere both users' apps can check.
 
 ## Active Organization (`useOrg`)
 

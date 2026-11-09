@@ -1,6 +1,7 @@
 import { Stack } from "expo-router";
 import { useAuth, AuthProvider } from '../context/AuthContext'
 import { ActivityIndicator, View } from "react-native";
+import { colors } from "@/theme";
 
 export default function RootLayout() {
   return <AuthProvider>
@@ -12,8 +13,8 @@ function RootNavigator() {
   const { user, loading } = useAuth()
   if (loading) {
     return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-        <ActivityIndicator />
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.background }}>
+        <ActivityIndicator color={colors.primary} />
       </View>
     )
   }

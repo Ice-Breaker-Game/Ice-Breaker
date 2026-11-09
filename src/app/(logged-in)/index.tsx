@@ -1,6 +1,5 @@
 
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { router } from 'expo-router';
 import { useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
@@ -478,14 +477,6 @@ export default function Index() {
             </View>
           ))
         )}
-        <Pressable
-              style={styles.button}
-              onPress={() => router.push('/map')} 
-            >
-              <Text style={styles.buttonText}>
-                Go to map
-              </Text>
-          </Pressable>
       </View>
     </ScrollView>
   )}

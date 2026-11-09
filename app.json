@@ -34,11 +34,18 @@
           "imageWidth": 76
         }
       ],
-      "@maplibre/maplibre-react-native"
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Allow $(PRODUCT_NAME) to access your photos so you can choose a profile picture."
+        }
+      ],
+      ["@maplibre/maplibre-react-native"]
     ],
     "experiments": {
       "typedRoutes": true,
-      "reactCompiler": true
+      "reactCompiler": true,
+      "baseUrl": "/break-the-ice"
     }
   }
 }

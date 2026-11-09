@@ -1,8 +1,10 @@
+import { AuthHeader, Button, Card, Screen, StatusMessage, TextField } from "@/components";
+import { colors, fontSize, spacing } from "@/theme";
 import { Link } from "expo-router";
 import { FirebaseError } from "firebase/app";
 import { signInWithEmailAndPassword } from "firebase/auth";
 import { useState } from "react";
-import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
+import { StyleSheet, Text } from "react-native";
 import { auth } from "../../firebase";
 
 export default function Login() {
@@ -50,60 +52,60 @@ export default function Login() {
 
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.header}>
-        Log In
-      </Text>
-      <TextInput
-        style={styles.input}
-        placeholder="Enter your email"
-        value={email}
-        onChangeText={setEmail}
-        keyboardType="email-address"
-        autoCapitalize="none"
-        autoComplete="email"
-      />
-      <TextInput
-        style={styles.input}
-        placeholder="Enter your password"
-        secureTextEntry={true}
-        value={password}
-        onChangeText={setPassword}
-        autoCapitalize="none"
-        autoComplete="current-password"
-      />
-      {!!error && <Text style={styles.error}>{error}</Text>}
-
-      <Pressable onPress={handleLogin}
-        style={styles.button}
-        disabled={submitting}
-      >
-        {submitting ? (
-          <ActivityIndicator color='#fff' size="small" />
-        ) : (
-          <Text style={styles.buttonText}>Log In</Text>
-        )}
-      </Pressable>
-      <Text style={styles.haveAccount}>
+    <Screen centered safeArea>
+      <AuthHeader title="Welcome back" subtitle="Log in to find people to play with." />
+      <Card>
+        <TextField
+          label="Email"
+          placeholder="you@example.com"
+          value={email}
+          onChangeText={setEmail}
+          keyboardType="email-address"
+          autoCapitalize="none"
+          autoComplete="email"
+        />
+        <TextField
+          label="Password"
+          placeholder="Your password"
+          secureTextEntry={true}
+          value={password}
+          onChangeText={setPassword}
+          autoCapitalize="none"
+          autoComplete="current-password"
+          returnKeyType="go"
+          onSubmitEditing={handleLogin}
+        />
+        <StatusMessage type="error" message={error} />
+        <Button title="Log in" onPress={handleLogin} loading={submitting} />
+        <Link href="/forgot-password" style={styles.secondaryLink}>
+          Forgot password?
+        </Link>
+      </Card>
+      <Text style={styles.footer}>
         {"Don't have an account? "}
         <Link href="/signup" style={styles.link}>
           Sign up
         </Link>
       </Text>
-      <Text style={styles.haveAccount}>
-        <Link href="/forgot-password" style={styles.link}>
-          Forgot Password?
-        </Link>
-      </Text>
-    </View>
+    </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    justifyContent: "center",
-    padding: 12,
+  footer: {
+    textAlign: "center",
+    color: colors.textMuted,
+    fontSize: fontSize.md,
+    marginTop: spacing.sm,
+  },
+  link: {
+    color: colors.primary,
+    fontWeight: "700",
+  },
+  secondaryLink: {
+    color: colors.primary,
+    fontSize: fontSize.md,
+    textAlign: "center",
   },
 
   header: {
